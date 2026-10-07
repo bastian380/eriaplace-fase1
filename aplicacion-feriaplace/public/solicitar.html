@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solicitar puesto - FeriaPlace</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main class="ancho">
+  <div class="tarjeta">
+    <h2>Solicitar un puesto</h2>
+    <p>Elige la feria y, si quieres, un puesto del plano. El administrador revisará tu solicitud y te confirmará el puesto que corresponda.</p>
+    <form id="form-solicitud">
+      <label for="feria">Feria *</label>
+      <select id="feria" required></select>
+
+      <label>Puesto preferido (opcional, toca un puesto verde del plano)</label>
+      <div id="plano"></div>
+      <div class="acciones-fila">
+        <select id="puesto"></select>
+      </div>
+
+      <label for="rubro">Rubro / qué vendes *</label>
+      <input type="text" id="rubro" required placeholder="Ej: comida, artesanía, ropa...">
+
+      <label for="zona">Zona de preferencia (opcional)</label>
+      <select id="zona"></select>
+
+      <label for="tamano">Tamaño de puesto preferido (opcional)</label>
+      <select id="tamano">
+        <option value="">Sin preferencia</option>
+        <option value="pequeno">Pequeño</option>
+        <option value="mediano">Mediano</option>
+        <option value="grande">Grande</option>
+      </select>
+
+      <label for="comentario">Comentario adicional (opcional)</label>
+      <textarea id="comentario" rows="3"></textarea>
+
+      <button type="submit">Enviar solicitud</button>
+    </form>
+    <div id="mensaje"></div>
+  </div>
+</main>
+<script src="js/api.js"></script>
+<script src="js/plano.js"></script>
+<script src="js/solicitar.js"></script>
+</body>
+</html>

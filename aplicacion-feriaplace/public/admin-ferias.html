@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ferias y planos - FeriaPlace</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main class="ancho">
+  <div class="tarjeta">
+    <div class="titulo-plano">
+      <h2>Ferias y planos</h2>
+      <button type="button" id="btn-nueva" class="sin-margen">+ Nueva feria</button>
+    </div>
+    <div id="lista-ferias" class="lista-ferias"></div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Calendario de temporada</h2>
+    <p class="texto-suave">Toca un día vacío para crear una feria que empiece ese día, o toca una feria para abrirla y cambiar sus fechas.</p>
+    <div id="calendario"></div>
+  </div>
+
+  <div class="tarjeta oculto" id="tarjeta-datos">
+    <h2 id="titulo-datos">Datos de la feria</h2>
+    <form id="form-feria" class="form-columnas">
+      <div>
+        <label for="f-nombre">Nombre *</label>
+        <input id="f-nombre" required maxlength="150" placeholder="Ej: Feria de Navidad">
+      </div>
+      <div>
+        <label for="f-lugar">Lugar</label>
+        <input id="f-lugar" maxlength="200" placeholder="Ej: Plaza de Armas">
+      </div>
+      <div>
+        <label for="f-comuna">Comuna</label>
+        <select id="f-comuna"><option value="">Sin comuna</option></select>
+      </div>
+      <div>
+        <label for="f-fecha-inicio">Fecha de inicio</label>
+        <input id="f-fecha-inicio" type="date">
+      </div>
+      <div>
+        <label for="f-fecha-cierre">Fecha de cierre</label>
+        <input id="f-fecha-cierre" type="date">
+      </div>
+      <div>
+        <label for="f-fecha">Horario</label>
+        <input id="f-fecha" maxlength="150" placeholder="Ej: Todos los días de 11:00 a 21:00">
+      </div>
+      <div>
+        <label for="f-precio">Precio por puesto (toda la temporada)</label>
+        <input id="f-precio" type="number" min="0" step="1" placeholder="Ej: 150000">
+      </div>
+      <div class="dos-campos">
+        <div>
+          <label for="f-ancho">Ancho del plano (cuadros)</label>
+          <input id="f-ancho" type="number" min="6" max="60" value="24" required>
+        </div>
+        <div>
+          <label for="f-alto">Alto del plano (cuadros)</label>
+          <input id="f-alto" type="number" min="6" max="60" value="14" required>
+        </div>
+      </div>
+      <fieldset id="f-puestos-iniciales" class="columna-completa caja-puestos">
+        <legend>Puestos de la feria</legend>
+        <p class="texto-suave">Indica cuántos puestos tendrá y se crearán solos, ordenados en filas en el plano. Después puedes moverlos, cambiarlos o agregar más. Si pones 0, el plano queda vacío para dibujarlos a mano.</p>
+        <div class="form-columnas">
+          <div>
+            <label for="f-cantidad">Cantidad de puestos</label>
+            <input id="f-cantidad" type="number" min="0" max="200" value="0">
+          </div>
+          <div>
+            <label for="f-tamano-puestos">Tamaño de los puestos</label>
+            <select id="f-tamano-puestos">
+              <option value="pequeno">Pequeño (2x2)</option>
+              <option value="mediano" selected>Mediano (3x2)</option>
+              <option value="grande">Grande (4x3)</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-zona-puestos">Zona</label>
+            <input id="f-zona-puestos" maxlength="80" value="General">
+          </div>
+          <div>
+            <label for="f-prefijo-puestos">Código (letra inicial)</label>
+            <input id="f-prefijo-puestos" maxlength="10" value="A">
+          </div>
+        </div>
+      </fieldset>
+      <div class="columna-completa">
+        <label for="f-descripcion">¿De qué se trata?</label>
+        <textarea id="f-descripcion" rows="2" maxlength="1000" placeholder="Ej: Feria navideña de regalos, artesanía y comida, con juegos para niños."></textarea>
+      </div>
+      <div class="columna-completa">
+        <label>Ubicación en el mapa de Santiago</label>
+        <p class="texto-suave">Haz clic en el mapa donde se hace la feria. La comuna se elige sola según el punto.
+          <span id="f-ubicacion-texto"></span>
+          <button type="button" id="btn-quitar-ubicacion" class="secundario sin-margen boton-chico oculto">Quitar ubicación</button>
+        </p>
+        <div id="mapa-ubicacion" class="mapa-santiago mapa-chico"></div>
+      </div>
+      <label class="check columna-completa"><input type="checkbox" id="f-publicada" checked> Publicada (visible para los comerciantes)</label>
+      <div class="acciones-fila columna-completa">
+        <button type="submit" id="btn-guardar-feria">Guardar datos</button>
+        <button type="button" id="btn-eliminar-feria" class="peligro">Eliminar feria</button>
+      </div>
+    </form>
+    <div id="mensaje-feria"></div>
+  </div>
+
+  <div class="tarjeta oculto" id="tarjeta-editor">
+    <div class="titulo-plano">
+      <h2>Plano</h2>
+      <div class="acciones-fila">
+        <span id="estado-cambios" class="texto-suave"></span>
+        <button type="button" id="btn-descartar" class="secundario sin-margen">Descartar cambios</button>
+        <button type="button" id="btn-guardar-plano" class="sin-margen">Guardar plano</button>
+      </div>
+    </div>
+    <p class="texto-suave">Elige qué agregar y haz clic en un espacio vacío del plano. Además de puestos puedes dibujar escenario, baños, bar, comedor, boletería, pasillos, paredes y flechas de circulación. Arrastra para mover; selecciona algo y arrastra la esquina naranja para cambiar su tamaño (también puedes moverlo con las flechas del teclado).</p>
+
+    <div class="herramientas">
+      <label><strong>Agregar:</strong>
+        <select id="n-tipo" class="herramienta-tipo"><option value="puesto">Puesto</option></select>
+      </label>
+      <span id="n-campos-puesto" class="acciones-fila">
+      <label>Código <input id="n-prefijo" value="A" maxlength="10" size="4"></label>
+      <label>Zona <input id="n-zona" list="lista-zonas" value="General" maxlength="80"></label>
+      <label>Tamaño
+        <select id="n-tamano">
+          <option value="pequeno">Pequeño (2x2)</option>
+          <option value="mediano" selected>Mediano (3x2)</option>
+          <option value="grande">Grande (4x3)</option>
+        </select>
+      </label>
+      </span>
+      <datalist id="lista-zonas"></datalist>
+    </div>
+
+    <div id="editor" class="editor-plano"></div>
+    <div id="mensaje-plano"></div>
+
+    <div id="panel-puesto" class="panel-puesto oculto">
+      <h3>Puesto seleccionado <span id="p-estado" class="badge"></span></h3>
+      <div class="form-columnas">
+        <div><label for="p-codigo">Código</label><input id="p-codigo" maxlength="20"></div>
+        <div><label for="p-zona">Zona</label><input id="p-zona" list="lista-zonas" maxlength="80"></div>
+        <div>
+          <label for="p-tamano">Tamaño</label>
+          <select id="p-tamano">
+            <option value="pequeno">Pequeño</option>
+            <option value="mediano">Mediano</option>
+            <option value="grande">Grande</option>
+          </select>
+        </div>
+        <div class="dos-campos">
+          <div><label for="p-ancho">Ancho</label><input id="p-ancho" type="number" min="1" max="20"></div>
+          <div><label for="p-alto">Alto</label><input id="p-alto" type="number" min="1" max="20"></div>
+        </div>
+        <div>
+          <label for="p-precio">Precio de este puesto</label>
+          <input id="p-precio" type="number" min="0" step="1">
+          <p class="texto-suave" id="p-precio-ayuda"></p>
+        </div>
+      </div>
+      <div class="acciones-fila">
+        <button type="button" id="btn-eliminar-puesto" class="peligro">Eliminar puesto</button>
+      </div>
+    </div>
+
+    <div id="panel-elemento" class="panel-puesto oculto">
+      <h3>Elemento seleccionado <span class="texto-suave">(no se arrienda)</span></h3>
+      <div class="form-columnas">
+        <div><label for="e-tipo">Tipo</label><select id="e-tipo"></select></div>
+        <div><label for="e-etiqueta">Texto que se muestra</label><input id="e-etiqueta" maxlength="40" placeholder="Ej: Escenario"></div>
+        <div><label for="e-color">Color</label><input id="e-color" type="color"></div>
+        <div id="e-campo-direccion">
+          <label for="e-direccion">Dirección de la flecha</label>
+          <select id="e-direccion">
+            <option value="arriba">Hacia arriba</option>
+            <option value="abajo">Hacia abajo</option>
+            <option value="izquierda">Hacia la izquierda</option>
+            <option value="derecha">Hacia la derecha</option>
+          </select>
+        </div>
+        <div class="dos-campos">
+          <div><label for="e-ancho">Ancho</label><input id="e-ancho" type="number" min="1" max="60"></div>
+          <div><label for="e-alto">Alto</label><input id="e-alto" type="number" min="1" max="60"></div>
+        </div>
+      </div>
+      <div class="acciones-fila">
+        <button type="button" id="btn-eliminar-elemento" class="peligro">Eliminar elemento</button>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="js/api.js"></script>
+<script src="js/mapa-santiago.js"></script>
+<script src="js/plano.js"></script>
+<script src="js/calendario.js"></script>
+<script src="js/admin-ferias.js"></script>
+</body>
+</html>

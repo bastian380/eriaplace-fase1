@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FeriaPlace</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main class="ancho">
+  <div class="tarjeta">
+    <h1>Encuentra tu puesto en la feria</h1>
+    <p>Elige una feria, revisa su plano y mira qué puestos están disponibles. Si te interesa uno, envía tu solicitud y el administrador te confirmará el espacio.</p>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Calendario de ferias de temporada</h2>
+    <p class="texto-suave">Cada feria aparece en los días en que está abierta. Tócala para ver su plano y sus puestos.</p>
+    <div id="calendario"></div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="titulo-plano">
+      <h2>Mapa de Santiago</h2>
+      <div class="leyenda">
+        <span><span class="punto comuna-con-ferias"></span>Comuna con ferias</span>
+        <span><span class="punto comuna-sin-ferias"></span>Sin ferias todavía</span>
+      </div>
+    </div>
+    <p class="texto-suave">Pasa el mouse sobre una comuna para ver su nombre y tócala para ver sus ferias.</p>
+    <div id="mapa-santiago" class="mapa-santiago"></div>
+    <div id="detalle-comuna" class="detalle-puesto oculto"></div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Ferias</h2>
+    <div id="lista-ferias" class="lista-ferias"><p>Cargando ferias...</p></div>
+  </div>
+
+  <div class="tarjeta oculto" id="tarjeta-plano">
+    <div class="titulo-plano">
+      <div>
+        <h2 id="feria-nombre"></h2>
+        <p id="feria-detalle" class="texto-suave"></p>
+      </div>
+      <div class="leyenda">
+        <span><span class="punto disponible"></span>Disponible</span>
+        <span><span class="punto ocupado"></span>Ocupado</span>
+      </div>
+    </div>
+    <p id="feria-descripcion"></p>
+    <div id="plano"></div>
+    <div id="detalle-puesto" class="detalle-puesto">
+      <p class="texto-suave">Toca un puesto del plano para ver sus datos.</p>
+    </div>
+  </div>
+</main>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="js/api.js"></script>
+<script src="js/mapa-santiago.js"></script>
+<script src="js/plano.js"></script>
+<script src="js/calendario.js"></script>
+<script src="js/inicio.js"></script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #f4f6f8;
+  color: #1f2937;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body > main {
+  flex: 1;
+  width: 100%;
+}
+
+header {
+  background: #1f6f4f;
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+nav a {
+  margin-left: 16px;
+  color: white;
+  text-decoration: none;
+}
+
+nav a:hover { text-decoration: underline; }
+
+main {
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 0 16px;
+}
+
+.tarjeta {
+  background: white;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+button {
+  margin-top: 18px;
+  background: #1f6f4f;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+button:hover { background: #17593e; }
+
+button.secundario {
+  background: #6b7280;
+}
+button.secundario:hover { background: #4b5563; }
+
+button.peligro {
+  background: #b91c1c;
+}
+button.peligro:hover { background: #991b1b; }
+
+.mensaje {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.mensaje.error { background: #fee2e2; color: #991b1b; }
+.mensaje.exito { background: #dcfce7; color: #166534; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+th, td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.92rem;
+}
+th { background: #f3f4f6; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.badge.pendiente { background: #fef3c7; color: #92400e; }
+.badge.confirmada { background: #dcfce7; color: #166534; }
+.badge.rechazada { background: #fee2e2; color: #991b1b; }
+
+.mapa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.puesto-celda {
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+}
+.puesto-celda.disponible { background: #1f6f4f; }
+.puesto-celda.ocupado { background: #9ca3af; }
+
+.leyenda { margin-top: 10px; font-size: 0.85rem; }
+.leyenda span { margin-right: 16px; }
+.punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+
+.acciones-fila { display: flex; gap: 8px; align-items: center; }
+.acciones-fila select { width: auto; }
+
+.oculto { display: none; }
+
+/* ---------- Ferias y planos ---------- */
+main.ancho { max-width: 1150px; }
+
+a.boton {
+  display: inline-block;
+  margin-top: 12px;
+  background: #1f6f4f;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+a.boton:hover { background: #17593e; }
+button.sin-margen { margin-top: 0; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.texto-suave { color: #6b7280; font-size: 0.9rem; margin: 4px 0; }
+
+.lista-ferias {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.feria-item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  background: #f9fafb;
+  color: #1f2937;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+}
+.feria-item:hover { background: #f0fdf4; border-color: #86efac; }
+.feria-item.activa { border-color: #1f6f4f; background: #f0fdf4; }
+.feria-item .disponibles { color: #1f6f4f; font-weight: 600; font-size: 0.9rem; }
+
+.titulo-plano {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.titulo-plano h2 { margin: 0; }
+
+.punto.disponible { background: #1f6f4f; }
+.punto.ocupado { background: #9ca3af; }
+
+.plano-marco {
+  overflow-x: auto;
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafaf7;
+}
+.plano {
+  --columnas: 24;
+  --filas: 14;
+  display: grid;
+  grid-template-columns: repeat(var(--columnas), 1fr);
+  grid-template-rows: repeat(var(--filas), 1fr);
+  aspect-ratio: var(--columnas) / var(--filas);
+  gap: 0;
+  padding: 0;
+  position: relative;
+  touch-action: none;
+}
+.plano.con-grilla {
+  background-image:
+    linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+    linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+  background-size: calc(100% / var(--columnas)) calc(100% / var(--filas));
+  cursor: copy;
+}
+.plano-puesto {
+  margin: 2px;
+  padding: 0;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+.plano-puesto.disponible { background: #1f6f4f; }
+.plano-puesto.disponible:hover { background: #17593e; }
+.plano-puesto.ocupado { background: #9ca3af; cursor: default; }
+.plano-puesto.seleccionado { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4); }
+
+.plano-puesto.editable { background: var(--color-zona, #2563eb); cursor: grab; }
+.plano-puesto.editable.ocupado { background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.25) 0 6px, transparent 6px 12px); }
+.plano-puesto.arrastrando { opacity: 0.85; cursor: grabbing; z-index: 2; }
+.plano-puesto.invalido { background: #b91c1c !important; }
+
+/* Elementos del plano que no se arriendan (escenario, baño, pasillos, flechas...). Van debajo de los puestos. */
+.plano-puesto { position: relative; z-index: 2; }
+.plano-puesto.arrastrando { z-index: 4; }
+.plano-elemento {
+  position: relative;
+  z-index: 0;
+  margin: 1px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.1;
+  user-select: none;
+}
+.plano-elemento span { padding: 0 3px; overflow-wrap: anywhere; }
+.plano-elemento.tipo-escenario { border-radius: 12px; font-size: 1rem; }
+.plano-elemento.tipo-pared { margin: 0; border-radius: 0; }
+.plano-elemento.tipo-pasillo { border: 1px dashed #9ca3af; font-weight: 600; color: #6b7280 !important; }
+.plano-elemento.tipo-flecha { z-index: 1; overflow: visible; }
+.plano-elemento.tipo-flecha svg { width: 100%; height: 100%; }
+.plano-elemento.tipo-flecha span { position: absolute; font-size: 0.7rem; color: #111827; background: rgba(255,255,255,0.8); border-radius: 3px; }
+.plano.con-grilla .plano-elemento { cursor: grab; }
+.plano-elemento.seleccionado { outline: 3px solid #f59e0b; outline-offset: 1px; z-index: 3; }
+.plano-elemento.arrastrando { opacity: 0.8; cursor: grabbing; z-index: 4; }
+
+/* Asa para cambiar el tamaño del puesto o elemento seleccionado */
+.asa-tamano {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  background: #f59e0b;
+  border: 2px solid white;
+  border-radius: 3px;
+  cursor: nwse-resize;
+  z-index: 5;
+}
+.herramientas select.herramienta-tipo { font-weight: 600; }
+
+.detalle-puesto, .panel-puesto {
+  margin-top: 16px;
+  padding: 14px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+.detalle-puesto h3, .panel-puesto h3 { margin: 0 0 6px; }
+
+.herramientas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+.herramientas label { display: flex; align-items: center; gap: 6px; margin: 0; }
+.herramientas input, .herramientas select { width: auto; padding: 6px 8px; }
+
+.form-columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 16px;
+}
+.form-columnas .columna-completa { grid-column: 1 / -1; }
+.dos-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+label.check { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+label.check input { width: auto; }
+
+@media (max-width: 640px) {
+  header { flex-direction: column; gap: 8px; align-items: flex-start; }
+  nav a { margin: 0 12px 0 0; }
+  table { display: block; overflow-x: auto; }
+}
+.badge.disponible { background: #dcfce7; color: #166534; }
+.badge.ocupado { background: #e5e7eb; color: #374151; }
+
+/* ---------- Mapa de Santiago ---------- */
+.mapa-santiago {
+  height: 460px;
+  margin-top: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  z-index: 0; /* que los controles del mapa no tapen el encabezado */
+}
+.mapa-santiago.mapa-chico { height: 320px; margin-top: 4px; }
+.punto.comuna-con-ferias { background: rgba(31, 111, 79, 0.55); border: 1px solid #1f6f4f; }
+.punto.comuna-sin-ferias { background: rgba(31, 111, 79, 0.08); border: 1px solid #1f6f4f; }
+.ferias-comuna { margin: 6px 0 0; padding-left: 18px; }
+.ferias-comuna li { margin-bottom: 4px; }
+.ferias-comuna a { color: #1f6f4f; font-weight: 600; margin-right: 6px; }
+button.boton-chico { padding: 4px 10px; font-size: 0.85rem; margin-left: 6px; }
+.leaflet-container a.leaflet-popup-close-button { color: #6b7280; }
+.leaflet-popup-content a { color: #1f6f4f; font-weight: 600; }
+.mapa-santiago path.leaflet-interactive:focus { outline: none; }
+
+@media (max-width: 640px) {
+  .mapa-santiago { height: 340px; }
+}
+
+/* Cantidad de puestos al crear una feria */
+.caja-puestos {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 16px 16px;
+  margin: 0;
+}
+.caja-puestos legend { font-weight: 600; padding: 0 6px; }
+
+/* Mensaje cuando todavía no hay ferias */
+.estado-vacio {
+  text-align: center;
+  color: #4b5563;
+  padding: 24px 16px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  margin: 0;
+}
+.lista-ferias .estado-vacio { grid-column: 1 / -1; }
+
+/* ---------- Calendario de ferias de temporada ---------- */
+.cal-barra { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.cal-barra button.boton-chico { margin-left: 0; }
+.cal-titulo { text-transform: capitalize; font-size: 1.1rem; min-width: 150px; text-align: center; }
+.cal-marco { overflow-x: auto; margin-top: 10px; }
+.cal-grilla {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 560px;
+  border-top: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
+}
+.cal-encabezado {
+  background: #f3f4f6;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 6px 0;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.cal-dia {
+  min-height: 82px;
+  padding: 4px;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cal-dia.fuera { background: #fafafa; }
+.cal-dia.fuera .cal-numero { color: #9ca3af; }
+.cal-dia.hoy .cal-numero { background: #1f6f4f; color: white; border-radius: 999px; padding: 0 6px; }
+.cal-dia.elegible { cursor: pointer; }
+.cal-dia.elegible:hover { background: #f0fdf4; }
+.cal-numero { font-size: 0.8rem; font-weight: 600; align-self: flex-start; }
+button.cal-feria {
+  margin: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-feria, #1f6f4f);
+  font-size: 0.72rem;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button.cal-feria:hover { filter: brightness(0.9); background: var(--color-feria, #1f6f4f); }
+.cal-lista { margin: 12px 0 0; padding: 0; list-style: none; }
+.cal-lista li { margin-bottom: 6px; }
+.cal-lista a { color: #1f6f4f; font-weight: 600; margin-right: 6px; }
+.cal-vacio { margin-top: 12px; padding: 14px; }
+
+/* ---------- Precios y pagos ---------- */
+.precio { color: #1f2937; font-weight: 600; font-size: 0.9rem; }
+.badge.pagado { background: #dcfce7; color: #166534; }
+.badge.sin-pago { background: #e5e7eb; color: #374151; }
+.resumen-pagos { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.resumen-pagos div { background: #f9fafb; border-radius: 8px; padding: 10px 14px; min-width: 160px; }
+.resumen-pagos strong { display: block; font-size: 1.2rem; }
+input.monto { width: 120px; padding: 6px 8px; }
+
+/* Selector de color del panel de elementos */
+input[type="color"] { height: 42px; padding: 3px; cursor: pointer; }
+
+/* Pie de página */
+footer.pie {
+  background: #1f2937;
+  color: #d1d5db;
+  padding: 24px 16px 16px;
+  font-size: 0.9rem;
+}
+
+.pie-contenido {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px 48px;
+}
+
+.pie-contenido strong { color: white; }
+.pie-contenido p { margin: 6px 0 0; }
+footer.pie a { color: #d1d5db; text-decoration: none; }
+footer.pie a:hover { color: white; text-decoration: underline; }
+
+.pie-legal {
+  max-width: 900px;
+  margin: 20px auto 0;
+  padding-top: 12px;
+  border-top: 1px solid #374151;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}

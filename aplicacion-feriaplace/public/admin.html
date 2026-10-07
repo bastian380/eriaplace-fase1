@@ -1,0 +1,69 @@
+<title>Panel administrador - FeriaPlace</title>
+<link rel="stylesheet" href="css/style.css">
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main class="ancho">
+  <div id="aviso-cuentas"></div>
+  <div class="tarjeta">
+    <h2>Solicitudes pendientes</h2>
+    <p>Asigna un puesto disponible de la feria a cada solicitud, o recházala si no corresponde.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Comerciante</th>
+          <th>Feria</th>
+          <th>Rubro</th>
+          <th>Preferencias</th>
+          <th>Comentario</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-pendientes"></tbody>
+    </table>
+    <div id="mensaje"></div>
+  </div>
+
+  <div class="tarjeta">
+    <div class="titulo-plano">
+      <h2>Pagos de puestos</h2>
+      <select id="filtro-feria-pagos" class="sin-margen" style="width:auto"></select>
+    </div>
+    <p class="texto-suave">Cada puesto asignado queda con su monto a pagar. Cuando el comerciante te pague (en efectivo o por transferencia), márcalo como pagado. Puedes corregir el monto si acordaron otro precio.</p>
+    <div id="resumen-pagos" class="resumen-pagos"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Comerciante</th>
+          <th>Feria</th>
+          <th>Puesto</th>
+          <th>Monto</th>
+          <th>Pago</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-pagos"></tbody>
+    </table>
+    <div id="mensaje-pagos"></div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Historial de solicitudes</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Comerciante</th>
+          <th>Feria</th>
+          <th>Rubro</th>
+          <th>Estado</th>
+          <th>Puesto</th>
+          <th>Comentario admin</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-historial"></tbody>
+    </table>
+  </div>
+</main>
+<script src="js/api.js"></script>
+<script src="js/admin.js"></script>
