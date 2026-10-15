@@ -49,6 +49,32 @@
   </div>
 
   <div class="tarjeta">
+    <div class="titulo-plano">
+      <h2>Reporte de ocupación por feria</h2>
+      <button id="btn-csv" class="secundario sin-margen">Descargar CSV</button>
+    </div>
+    <p class="texto-suave">Cuántos puestos tiene cada feria, cuántos están ocupados y libres, y cuánto se ha cobrado.</p>
+    <div id="resumen-ocupacion" class="resumen-pagos"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Feria</th>
+          <th>Fechas</th>
+          <th>Puestos</th>
+          <th>Ocupados</th>
+          <th>Libres</th>
+          <th>Ocupación</th>
+          <th>Solicitudes pendientes</th>
+          <th>Cobrado</th>
+          <th>Por cobrar</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-ocupacion"></tbody>
+    </table>
+    <div id="mensaje-ocupacion"></div>
+  </div>
+
+  <div class="tarjeta">
     <h2>Historial de solicitudes</h2>
     <table>
       <thead>

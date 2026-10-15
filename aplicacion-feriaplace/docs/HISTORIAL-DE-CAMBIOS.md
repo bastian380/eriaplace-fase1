@@ -5,6 +5,18 @@ sus preferencias (zona, tamaño, rubro); el administrador revisa las solicitudes
 pendientes y asigna el puesto real del mapa, agilizando el proceso en vez de que
 cada comerciante reserve un lugar específico.
 
+## Reporte de ocupación por feria (octubre 2026)
+
+En **Solicitudes** (admin) hay una tarjeta nueva, "Reporte de ocupación por feria", con una fila
+por feria: fechas, puestos totales, ocupados y libres, porcentaje de ocupación, solicitudes
+pendientes, lo cobrado y lo por cobrar. Arriba muestra el total de ferias y de puestos ocupados.
+
+- El botón **Descargar CSV** baja el mismo reporte como `reporte-ocupacion.csv` (separado por
+  punto y coma y con tildes, para abrirlo directo en Excel en español).
+- En la API son `GET /api/reportes/ocupacion` (JSON) y `GET /api/reportes/ocupacion.csv`, solo
+  para el administrador.
+- No cambia la base de datos: no hay que migrar, solo reiniciar el servidor (`npm start`).
+
 ## Ferias de temporada: calendario, precios y pagos (octubre 2026)
 
 Esta versión prepara la app para **ferias de temporada** (por ejemplo, ferias navideñas):

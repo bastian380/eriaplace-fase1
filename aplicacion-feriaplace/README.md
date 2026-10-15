@@ -1,7 +1,8 @@
 # FeriaPlace
 
 Sistema de gestión de puestos de feria. Los comerciantes se registran y piden un puesto;
-el administrador aprueba cuentas, crea ferias con su plano, asigna puestos y anota los pagos.
+el administrador aprueba cuentas, crea ferias con su plano, asigna puestos, anota los pagos y
+revisa un reporte de ocupación por feria (descargable en CSV).
 
 Hecho con **Node.js (Express)** y **MySQL**. La página web se sirve desde el mismo servidor.
 

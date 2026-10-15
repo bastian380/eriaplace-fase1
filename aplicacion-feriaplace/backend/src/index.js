@@ -8,6 +8,7 @@ const feriasRoutes = require('./routes/ferias');
 const puestosRoutes = require('./routes/puestos');
 const solicitudesRoutes = require('./routes/solicitudes');
 const usuariosRoutes = require('./routes/usuarios');
+const reportesRoutes = require('./routes/reportes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/api/ferias', feriasRoutes);
 app.use('/api/puestos', puestosRoutes);
 app.use('/api/solicitudes', solicitudesRoutes);
 app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/reportes', reportesRoutes);
 
 app.use(express.static(path.join(__dirname, '..', '..', 'public')));
 

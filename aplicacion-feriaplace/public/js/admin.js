@@ -62,6 +62,7 @@
 
     confirmadas = todas.filter((s) => s.estado === 'confirmada');
     pintarPagos();
+    cargarOcupacion();
 
     document.querySelectorAll('.btn-asignar').forEach((boton) => {
       boton.addEventListener('click', async () => {
@@ -170,6 +171,57 @@
     });
   }
   filtroFeria.addEventListener('change', pintarPagos);
+
+  // ---------- Reporte de ocupación ----------
+  async function cargarOcupacion() {
+    const tabla = document.getElementById('tabla-ocupacion');
+    try {
+      const ferias = await apiFetch('/reportes/ocupacion');
+      const total = (clave) => ferias.reduce((suma, f) => suma + f[clave], 0);
+      const puestos = total('puestos_total');
+      const ocupados = total('puestos_ocupados');
+      document.getElementById('resumen-ocupacion').innerHTML = `
+        <div>Ferias<strong>${ferias.length}</strong></div>
+        <div>Puestos ocupados<strong>${ocupados} de ${puestos}</strong><span class="texto-suave">${String(puestos === 0 ? 0 : Math.round((ocupados / puestos) * 1000) / 10).replace('.', ',')} % de ocupación</span></div>
+        <div>Puestos libres<strong>${total('puestos_libres')}</strong></div>`;
+      tabla.innerHTML = ferias.length === 0
+        ? '<tr><td colspan="9">Todavía no hay ferias creadas.</td></tr>'
+        : ferias.map((f) => `
+          <tr>
+            <td>${esc(f.nombre)}${f.publicada ? '' : ' <small>(borrador)</small>'}<br><small>${esc(f.comuna || '')}</small></td>
+            <td>${esc(formatearRangoFechas(f.fecha_inicio, f.fecha_cierre) || '-')}</td>
+            <td>${f.puestos_total}</td>
+            <td>${f.puestos_ocupados}</td>
+            <td>${f.puestos_libres}</td>
+            <td>${String(f.porcentaje_ocupacion).replace('.', ',')} %</td>
+            <td>${f.solicitudes_pendientes}</td>
+            <td>${formatearPesos(f.cobrado)}</td>
+            <td>${formatearPesos(f.por_cobrar)}</td>
+          </tr>`).join('');
+    } catch (err) {
+      document.getElementById('mensaje-ocupacion').innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
+    }
+  }
+
+  // El CSV se pide con el token de la sesión y se descarga como archivo
+  document.getElementById('btn-csv').addEventListener('click', async () => {
+    const aviso = document.getElementById('mensaje-ocupacion');
+    aviso.innerHTML = '';
+    try {
+      const respuesta = await fetch(`${API_BASE}/reportes/ocupacion.csv`, {
+        headers: { Authorization: `Bearer ${obtenerSesion().token}` },
+      });
+      if (!respuesta.ok) throw new Error('No se pudo generar el archivo');
+      const url = URL.createObjectURL(await respuesta.blob());
+      const enlace = document.createElement('a');
+      enlace.href = url;
+      enlace.download = 'reporte-ocupacion.csv';
+      enlace.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      aviso.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
+    }
+  });
 
   // Aviso de cuentas nuevas esperando aprobación
   apiFetch('/usuarios?estado=pendiente').then((pendientes) => {
