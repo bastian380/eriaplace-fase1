@@ -10,7 +10,7 @@ Estudiante: Bastian Reyes · Sección 010V · Docente: Reginaldo del Carmen Sali
 | `Evidencias Grupales/capturas-caso-de-uso/` | Capturas 01 a 21 del recorrido completo de la aplicación (06-10-2026): crear feria y croquis, registro y aprobación, solicitud, asignación, pago y salidas |
 | `Evidencias Individuales/` | 2.2 Autoevaluación del informe de avance |
 | `Fichas de avance/` | Fichas de avance 01 a 04 de las iteraciones |
-| `Presentacion/` | Presentación original y cambios al enfoque real |
+| `Presentacion/` | Presentación de la Semana 10 (`Presentacion_Semana10_FeriaPlace_Bastian_Reyes`, en .pptx y .pdf) con el enfoque real, el avance y el caso de uso CU-01; también la presentación original de Fase 1 y la lista de cambios |
 
 La aplicación está en `aplicacion-feriaplace/` (raíz del repositorio), con su guía de instalación en el README de esa carpeta.
 
