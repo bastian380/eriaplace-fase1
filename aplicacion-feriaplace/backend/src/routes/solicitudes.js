@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { verificarToken, requireRol } = require('../middleware/auth');
+const { notificar } = require('../notificar');
 
 const router = express.Router();
 
@@ -137,6 +138,14 @@ router.put('/:id/asignar', verificarToken, requireRol('administrador'), async (r
     );
 
     await conexion.commit();
+    const [[f]] = await pool.query('SELECT nombre FROM feria WHERE id = ?', [puestos[0].feria_id]);
+    await notificar(solicitudes[0].usuario_id, {
+      titulo: `Te asignamos el puesto ${puestos[0].codigo}`,
+      mensaje: `Tu solicitud para "${f.nombre}" fue aprobada: tienes el puesto ${puestos[0].codigo} (${puestos[0].zona}).`
+        + `${monto !== null ? ` El arriendo es de $${monto.toLocaleString('es-CL')} por la temporada.` : ''}`
+        + ' En "Mis solicitudes" puedes ver tu credencial con código QR.',
+      enlace: 'mis-solicitudes.html',
+    });
     res.json({ id: Number(id), estado: 'confirmada', puesto_id: Number(puesto_id), monto, estado_pago: 'pendiente' });
   } catch (err) {
     await conexion.rollback();
@@ -151,6 +160,8 @@ router.put('/:id/asignar', verificarToken, requireRol('administrador'), async (r
 router.put('/:id/rechazar', verificarToken, requireRol('administrador'), async (req, res) => {
   const { id } = req.params;
   const { comentario_admin } = req.body;
+  const [[solicitud]] = await pool.query(
+    'SELECT s.usuario_id, f.nombre AS feria FROM solicitud s LEFT JOIN feria f ON f.id = s.feria_id WHERE s.id = ?', [id]);
   const [resultado] = await pool.query(
     `UPDATE solicitud SET estado = 'rechazada', comentario_admin = ?, resuelto_en = NOW()
      WHERE id = ? AND estado = 'pendiente'`,
@@ -159,6 +170,12 @@ router.put('/:id/rechazar', verificarToken, requireRol('administrador'), async (
   if (resultado.affectedRows === 0) {
     return res.status(409).json({ error: 'La solicitud no existe o ya fue resuelta' });
   }
+  await notificar(solicitud.usuario_id, {
+    titulo: 'Tu solicitud de puesto fue rechazada',
+    mensaje: `El administrador rechazó tu solicitud para "${solicitud.feria || 'la feria'}".`
+      + `${comentario_admin ? ` Motivo: ${comentario_admin}` : ''}`,
+    enlace: 'mis-solicitudes.html',
+  });
   res.json({ id: Number(id), estado: 'rechazada' });
 });
 
@@ -177,6 +194,7 @@ router.put('/:id/pago', verificarToken, requireRol('administrador'), async (req,
   if (monto !== null && (!Number.isInteger(monto) || monto < 0 || monto > PRECIO_MAXIMO)) {
     return res.status(400).json({ error: 'El monto debe ser un número entero de pesos (ej: 150000 o 150.000)' });
   }
+  const [[antes]] = await pool.query('SELECT usuario_id, estado_pago FROM solicitud WHERE id = ?', [id]);
   const [resultado] = await pool.query(
     `UPDATE solicitud
      SET estado_pago = ?,
@@ -189,6 +207,14 @@ router.put('/:id/pago', verificarToken, requireRol('administrador'), async (req,
     return res.status(409).json({ error: 'Solo se registra el pago de solicitudes con puesto asignado' });
   }
   const [[fila]] = await pool.query('SELECT monto, estado_pago, pagado_en FROM solicitud WHERE id = ?', [id]);
+  // Solo se avisa cuando el pago pasa de pendiente a pagado (no al corregir el monto)
+  if (estado_pago === 'pagado' && antes.estado_pago !== 'pagado') {
+    await notificar(antes.usuario_id, {
+      titulo: 'Recibimos tu pago',
+      mensaje: `Registramos el pago de tu puesto${fila.monto !== null ? ` por $${fila.monto.toLocaleString('es-CL')}` : ''}. Tu credencial ya aparece al día.`,
+      enlace: 'mis-solicitudes.html',
+    });
+  }
   res.json({ id: Number(id), ...fila });
 });
 

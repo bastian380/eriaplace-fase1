@@ -1,28 +1,19 @@
 require('dotenv').config();
-const path = require('path');
-const express = require('express');
-const cors = require('cors');
+const app = require('./app');
 
-const authRoutes = require('./routes/auth');
-const feriasRoutes = require('./routes/ferias');
-const puestosRoutes = require('./routes/puestos');
-const solicitudesRoutes = require('./routes/solicitudes');
-const usuariosRoutes = require('./routes/usuarios');
-const reportesRoutes = require('./routes/reportes');
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-app.use('/api/auth', authRoutes);
-app.use('/api/ferias', feriasRoutes);
-app.use('/api/puestos', puestosRoutes);
-app.use('/api/solicitudes', solicitudesRoutes);
-app.use('/api/usuarios', usuariosRoutes);
-app.use('/api/reportes', reportesRoutes);
-
-app.use(express.static(path.join(__dirname, '..', '..', 'public')));
+// Sin una clave secreta propia cualquiera podría fabricar sesiones de administrador
+const SECRETO_DE_EJEMPLO = 'pon_aqui_una_cadena_larga_y_aleatoria';
+if (!process.env.JWT_SECRET) {
+  console.error('Falta JWT_SECRET en el archivo .env (o en las variables del hosting). No se puede iniciar.');
+  process.exit(1);
+}
+if (process.env.JWT_SECRET === SECRETO_DE_EJEMPLO || process.env.JWT_SECRET.length < 16) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('JWT_SECRET es la de ejemplo o es muy corta. Pon una cadena larga y aleatoria antes de publicar.');
+    process.exit(1);
+  }
+  console.warn('Aviso: JWT_SECRET es la de ejemplo o es muy corta. Cámbiala antes de publicar la app.');
+}
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

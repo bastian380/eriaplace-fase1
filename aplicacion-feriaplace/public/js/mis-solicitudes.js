@@ -19,7 +19,7 @@
           NOMBRE_TAMANO[s.tamano_preferido] || '',
         ].filter(Boolean).join('<br>') || '-'}</td>
         <td><span class="badge ${s.estado}">${s.estado}</span></td>
-        <td>${esc(s.puesto_codigo || '-')}</td>
+        <td>${esc(s.puesto_codigo || '-')}${s.estado === 'confirmada' ? `<br><a href="credencial.html?id=${s.id}">Ver credencial</a>` : ''}</td>
         <td>${s.estado === 'confirmada'
     ? `${s.monto !== null ? formatearPesos(s.monto) : 'Monto por confirmar'}<br>
            <span class="badge ${s.estado_pago === 'pagado' ? 'pagado' : 'pendiente'}">${s.estado_pago === 'pagado' ? 'pagado' : 'pago pendiente'}</span>`

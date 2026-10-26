@@ -23,6 +23,25 @@
     });
   }
 
+  // Recuadro bajo el plano que explica qué puesto quedó elegido
+  function mostrarElegido(p) {
+    const caja = document.getElementById('puesto-elegido');
+    if (!p) {
+      caja.className = 'puesto-elegido';
+      caja.textContent = 'Todavía no eliges puesto. Puedes dejarlo así y el administrador te asignará uno.';
+      return;
+    }
+    const precio = p.precio ?? feria.precio_puesto;
+    caja.className = 'puesto-elegido activo';
+    caja.innerHTML = `Elegiste el puesto <strong>${esc(p.codigo)}</strong> · ${esc(p.zona)} ·${NOMBRE_TAMANO[p.tamano] || esc(p.tamano)}`
+      + `${precio !== null && precio !== undefined ? ` · ${formatearPesos(precio)} por la temporada` : ''}`
+      + '<button type="button" class="secundario boton-chico" id="quitar-puesto">Quitar</button>';
+    document.getElementById('quitar-puesto').addEventListener('click', () => {
+      selectPuesto.value = '';
+      alCambiarPuesto();
+    });
+  }
+
   // Al elegir un puesto preferido, la zona y el tamaño se completan con los de ese puesto
   function alCambiarPuesto() {
     const p = feria.puestos.find((x) => x.id === Number(selectPuesto.value));
@@ -30,6 +49,7 @@
       selectZona.value = p.zona;
       document.getElementById('tamano').value = p.tamano;
     }
+    mostrarElegido(p);
     pintarPlano();
   }
 
@@ -45,6 +65,7 @@
       selectPuesto.value = String(puestoInicial);
       alCambiarPuesto();
     } else {
+      mostrarElegido(null);
       pintarPlano();
     }
   }

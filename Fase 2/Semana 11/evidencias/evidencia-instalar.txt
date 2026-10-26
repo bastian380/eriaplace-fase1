@@ -1,0 +1,6 @@
+
+> feriaplace-backend@1.0.0 instalar
+> node src/instalar.js
+
+Tablas listas.
+Usuario administrador creado: admin@feriaplace.cl

@@ -4,6 +4,8 @@
 //   003: aprobación de cuentas nuevas por el administrador.
 //   004: ferias de temporada (fecha de inicio y cierre), precio por puesto y control de pagos.
 //   005: elementos del plano que no se arriendan (escenario, baño, bar, pasillos, flechas...).
+//   006: perímetro de cada feria, para dibujar su terreno en el mapa de Santiago.
+//   007: avisos al comerciante (cuenta aprobada, puesto asignado, pago recibido...).
 // Se puede ejecutar más de una vez sin problemas: cada paso revisa si ya fue aplicado.
 // Uso: dentro de backend/, `npm run migrar`
 require('dotenv').config();
@@ -205,6 +207,28 @@ async function migrar() {
       ancho INT NOT NULL DEFAULT 2,
       alto INT NOT NULL DEFAULT 2,
       CONSTRAINT fk_elemento_feria FOREIGN KEY (feria_id) REFERENCES feria(id) ON DELETE CASCADE
+    ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`));
+
+  console.log('Migración 006: perímetro de la feria en el mapa');
+
+  // Lista de puntos [latitud, longitud] que encierran el terreno de la feria
+  await paso('Agregar perímetro a feria', () => existeColumna('feria', 'perimetro'), () => pool.query(
+    'ALTER TABLE feria ADD COLUMN perimetro JSON NULL AFTER longitud'));
+
+  console.log('Migración 007: avisos al comerciante');
+
+  await paso('Crear tabla notificacion', () => existeTabla('notificacion'), () => pool.query(`
+    CREATE TABLE notificacion (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      usuario_id INT NOT NULL,
+      titulo VARCHAR(150) NOT NULL,
+      mensaje VARCHAR(500) NOT NULL,
+      enlace VARCHAR(200) NULL,
+      leida TINYINT(1) NOT NULL DEFAULT 0,
+      enviada_correo TINYINT(1) NOT NULL DEFAULT 0,
+      creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_notificacion_usuario (usuario_id, leida),
+      CONSTRAINT fk_notificacion_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`));
 
   console.log('Migración terminada.');

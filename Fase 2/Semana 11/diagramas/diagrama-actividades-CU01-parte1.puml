@@ -1,0 +1,53 @@
+@startuml
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 12
+skinparam ActivityBorderColor #555555
+skinparam ArrowColor #444444
+skinparam swimlaneTitleFontStyle bold
+skinparam swimlaneTitleFontSize 14
+title Diagrama 1 de 2 · CU-01 Solicitar y asignar un puesto en una feria de temporada (FeriaPlace v1.0, 20-10-2026)\nParte 1: el comerciante envía la solicitud
+
+|#F3F6FA|Comerciante|
+start
+#C8E6C9:A01 Abre el inicio, elige una feria
+y toca un puesto verde del plano
+[F03, F04, F05];
+|#FFFFFF|Sistema FeriaPlace (API + MySQL)|
+#C8E6C9:A02 Verifica el token JWT
+y que la cuenta esté aprobada
+[F01, F02];
+if (¿Sesión válida y cuenta aprobada?) then (No)
+  |Comerciante|
+  #C8E6C9:A03 Inicia sesión o crea su cuenta
+  (queda pendiente hasta que
+  el administrador la apruebe) [F01, F02];
+  stop
+else (Sí)
+endif
+|Comerciante|
+#C8E6C9:A04 Completa la solicitud: rubro,
+puesto preferido, zona, tamaño
+y comentario [F06];
+|Sistema FeriaPlace (API + MySQL)|
+#C8E6C9:A05 Valida rubro, feria publicada,
+tamaño y que el puesto preferido
+siga disponible [F06];
+while (¿Datos válidos?) is (No)
+  #C8E6C9:A06 Muestra el error ("El rubro es
+  obligatorio", "El puesto preferido ya
+  no está disponible"), el comerciante
+  corrige y reenvía (vuelve a A05) [F06];
+endwhile (Sí)
+#C8E6C9:A07 Registra la solicitud
+estado = pendiente
+(tabla solicitud) [F06];
+|#F3F6FA|Administrador|
+#E3F2FD:Continúa en el diagrama 2 (A08)>
+detach
+legend right
+  <color:#43A047>■■</color> Implementada y comprobada
+  <color:#F9D71C>■■</color> Parcial
+  <color:#E57373>■■</color> Pendiente
+  [Fxx] = funcionalidad de la ficha 04
+endlegend
+@enduml

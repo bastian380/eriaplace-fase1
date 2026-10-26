@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { verificarToken, requireRol } = require('../middleware/auth');
+const { notificar } = require('../notificar');
 
 const router = express.Router();
 
@@ -40,6 +41,16 @@ async function cambiarEstado(req, res, estado) {
     if (resultado.affectedRows === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+    await notificar(req.params.id, estado === 'aprobado'
+      ? {
+        titulo: 'Tu cuenta fue aprobada',
+        mensaje: 'Ya puedes iniciar sesión en FeriaPlace y solicitar un puesto en las ferias publicadas.',
+        enlace: 'index.html',
+      }
+      : {
+        titulo: 'Tu cuenta no fue aprobada',
+        mensaje: `El administrador revisó tu solicitud de cuenta y no la aprobó.${comentario ? ` Motivo: ${comentario}` : ''}`,
+      });
     return res.json({ id: Number(req.params.id), estado });
   } catch (err) {
     console.error(err);

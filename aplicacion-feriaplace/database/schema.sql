@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS feria (
   comuna VARCHAR(60) NULL,          -- comuna de la Región Metropolitana (ver public/datos/comunas-rm.geojson)
   latitud DECIMAL(9,6) NULL,        -- ubicación en el mapa de Santiago (opcional)
   longitud DECIMAL(9,6) NULL,
+  perimetro JSON NULL,              -- terreno de la feria en el mapa: lista de puntos [latitud, longitud]
   fecha_texto VARCHAR(150) NULL,    -- horario libre, ej: "Todos los días de 11:00 a 21:00"
   fecha_inicio DATE NULL,           -- primer día de la feria de temporada
   fecha_cierre DATE NULL,           -- último día de la feria
@@ -62,7 +63,7 @@ CREATE TABLE IF NOT EXISTS puesto (
 CREATE TABLE IF NOT EXISTS elemento_plano (
   id INT AUTO_INCREMENT PRIMARY KEY,
   feria_id INT NOT NULL,
-  tipo VARCHAR(20) NOT NULL,        -- escenario, bano, bar, comedor, boleteria, entrada, mesas, pasillo, pared, flecha, otro
+  tipo VARCHAR(20) NOT NULL,        -- escenario, bano, bar, comedor, boleteria, entrada, salida, mesas, pasillo, pared, flecha, otro
   etiqueta VARCHAR(40) NOT NULL DEFAULT '',
   color CHAR(7) NOT NULL DEFAULT '#6b7280',
   direccion ENUM('arriba', 'abajo', 'izquierda', 'derecha') NULL,  -- solo para flechas
@@ -95,4 +96,19 @@ CREATE TABLE IF NOT EXISTS solicitud (
   CONSTRAINT fk_solicitud_puesto FOREIGN KEY (puesto_id) REFERENCES puesto(id),
   CONSTRAINT fk_solicitud_feria FOREIGN KEY (feria_id) REFERENCES feria(id),
   CONSTRAINT fk_solicitud_preferido FOREIGN KEY (puesto_preferido_id) REFERENCES puesto(id) ON DELETE SET NULL
+);
+
+-- Avisos al comerciante: cuenta aprobada, puesto asignado, solicitud rechazada, pago recibido.
+-- Se muestran en "Avisos" y, si hay correo configurado, también se envían por email.
+CREATE TABLE IF NOT EXISTS notificacion (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  titulo VARCHAR(150) NOT NULL,
+  mensaje VARCHAR(500) NOT NULL,
+  enlace VARCHAR(200) NULL,          -- página de la app relacionada, ej: mis-solicitudes.html
+  leida TINYINT(1) NOT NULL DEFAULT 0,
+  enviada_correo TINYINT(1) NOT NULL DEFAULT 0,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_notificacion_usuario (usuario_id, leida),
+  CONSTRAINT fk_notificacion_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
 );

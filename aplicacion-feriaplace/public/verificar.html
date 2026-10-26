@@ -1,0 +1,20 @@
+<title>Verificar credencial - FeriaPlace</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main>
+  <div class="tarjeta" style="max-width:480px;margin:0 auto;">
+    <h2>Verificar credencial de puesto</h2>
+    <div id="resultado"><p class="texto-suave">Escanea el código QR de la credencial o escribe el código que aparece bajo el QR.</p></div>
+    <form id="form-codigo">
+      <label for="codigo">Código de la credencial</label>
+      <input type="text" id="codigo" placeholder="Ej: 12-a1b2c3d4e5f6a7b8c9d0" autocomplete="off" required>
+      <button type="submit">Verificar</button>
+    </form>
+  </div>
+</main>
+<script src="js/api.js"></script>
+<script src="js/verificar.js"></script>

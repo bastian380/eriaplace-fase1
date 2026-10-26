@@ -2,7 +2,7 @@
 // (escenario, baño, bar, comedor, boletería, paredes, pasillos, flechas de circulación...).
 // Las medidas están en celdas de la grilla del plano, igual que los puestos.
 
-const TIPOS_ELEMENTO = ['escenario', 'bano', 'bar', 'comedor', 'boleteria', 'entrada', 'mesas', 'pasillo', 'pared', 'flecha', 'otro'];
+const TIPOS_ELEMENTO = ['escenario', 'bano', 'bar', 'comedor', 'boleteria', 'entrada', 'salida', 'mesas', 'pasillo', 'pared', 'flecha', 'otro'];
 const DIRECCIONES = ['arriba', 'abajo', 'izquierda', 'derecha'];
 const MAX_ELEMENTOS = 300;
 

@@ -22,6 +22,7 @@
   // ---------- Mapa de Santiago ----------
   const detalleComuna = document.getElementById('detalle-comuna');
   let mapaSantiago = null;
+  const capasFeria = new Map(); // id de feria -> { marcador, perimetro }
 
   function feriasDeComuna(nombre) {
     return ferias.filter((f) => f.comuna === nombre);
@@ -63,21 +64,48 @@
       document.getElementById('mapa-santiago').innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
       return;
     }
-    // Las ferias que ya tienen ubicación aparecen como un marcador
-    for (const f of ferias.filter((x) => x.latitud !== null && x.longitud !== null)) {
-      const marcador = L.marker([f.latitud, f.longitud], { title: f.nombre }).addTo(mapaSantiago.mapa);
+    // Cada feria con ubicación aparece con un marcador y, si tiene, con el perímetro de su terreno
+    const ubicadas = ferias.filter((x) => x.latitud !== null && x.longitud !== null);
+    for (const f of ubicadas) {
+      const capas = { marcador: L.marker([f.latitud, f.longitud], { title: f.nombre }).addTo(mapaSantiago.mapa) };
+      if (f.perimetro) {
+        capas.perimetro = dibujarPerimetro(mapaSantiago.mapa, f.perimetro);
+        capas.perimetro.bindTooltip(`<strong>${esc(f.nombre)}</strong><br>Terreno ${textoSuperficie(f.perimetro)}`, { sticky: true });
+        capas.perimetro.on('click', () => capas.marcador.openPopup());
+      }
       const popup = document.createElement('div');
       popup.innerHTML = `
         <strong>${esc(f.nombre)}</strong><br>
         <span class="texto-suave">${describirFeria(f)}</span><br>
+        ${f.perimetro ? `Terreno ${textoSuperficie(f.perimetro)}<br>` : ''}
         ${f.puestos_disponibles} de ${f.total_puestos} puestos disponibles<br>
         <a href="?feria=${f.id}">Ver plano</a>`;
       popup.querySelector('a').addEventListener('click', (e) => {
         e.preventDefault();
         abrirFeria(f.id, true);
       });
-      marcador.bindPopup(popup);
+      capas.marcador.bindPopup(popup);
+      capasFeria.set(f.id, capas);
     }
+    // El mapa parte mostrando dónde están las ferias, no toda la ciudad
+    if (ubicadas.length > 0) {
+      const limites = L.latLngBounds(ubicadas.flatMap((f) => f.perimetro || [[f.latitud, f.longitud]]));
+      mapaSantiago.mapa.fitBounds(limites, { padding: [30, 30], maxZoom: 16 });
+    }
+    if (feriaActual) destacarEnMapa(feriaActual.id);
+  }
+
+  // Resalta el terreno de una feria y acerca el mapa a ella
+  function destacarEnMapa(id) {
+    if (!mapaSantiago) return false;
+    capasFeria.forEach((capas, idFeria) => {
+      if (capas.perimetro) capas.perimetro.setStyle(estiloPerimetro(idFeria === id));
+    });
+    const capas = capasFeria.get(id);
+    if (!capas) return false;
+    if (capas.perimetro) mapaSantiago.mapa.fitBounds(capas.perimetro.getBounds(), { padding: [30, 30], maxZoom: 18 });
+    else mapaSantiago.mapa.setView(capas.marcador.getLatLng(), 16);
+    return true;
   }
 
   function pintarLista() {
@@ -147,6 +175,8 @@
     document.getElementById('feria-detalle').innerHTML = describirFeria(feriaActual);
     document.getElementById('feria-descripcion').textContent = feriaActual.descripcion || '';
     tarjetaPlano.classList.remove('oculto');
+    document.getElementById('btn-ver-en-mapa').classList.toggle('oculto', feriaActual.latitud === null);
+    destacarEnMapa(id);
     pintarLista();
     pintarPlano();
     pintarDetalle();
@@ -167,6 +197,11 @@
     textoVacio: 'Este mes no hay ferias de temporada publicadas. Usa las flechas para ver otros meses.',
   });
   pintarMapa();
+  document.getElementById('btn-ver-en-mapa').addEventListener('click', () => {
+    if (feriaActual && destacarEnMapa(feriaActual.id)) {
+      document.getElementById('mapa-santiago').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
   const pedida = Number(new URLSearchParams(window.location.search).get('feria'));
   const inicial = ferias.find((f) => f.id === pedida) || ferias[0];
   if (inicial) abrirFeria(inicial.id);

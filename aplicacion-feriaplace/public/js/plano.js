@@ -6,6 +6,7 @@ const TIPOS_ELEMENTO = {
   comedor: { nombre: 'Comedor', etiqueta: 'Comedor', color: '#84cc16', medidas: [6, 2] },
   boleteria: { nombre: 'Boletería', etiqueta: 'Boletería', color: '#facc15', medidas: [5, 2] },
   entrada: { nombre: 'Entrada', etiqueta: 'Entrada', color: '#0ea5e9', medidas: [4, 1] },
+  salida: { nombre: 'Salida', etiqueta: 'Salida', color: '#dc2626', medidas: [4, 1] },
   mesas: { nombre: 'Mesas', etiqueta: 'Mesas', color: '#15803d', medidas: [4, 3] },
   pasillo: { nombre: 'Pasillo', etiqueta: 'Pasillo', color: '#e5e7eb', medidas: [8, 1] },
   pared: { nombre: 'Pared', etiqueta: '', color: '#111827', medidas: [8, 1] },

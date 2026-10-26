@@ -99,11 +99,20 @@
         <textarea id="f-descripcion" rows="2" maxlength="1000" placeholder="Ej: Feria navideña de regalos, artesanía y comida, con juegos para niños."></textarea>
       </div>
       <div class="columna-completa">
-        <label>Ubicación en el mapa de Santiago</label>
+        <label>Ubicación y perímetro en el mapa de Santiago</label>
         <p class="texto-suave">Haz clic en el mapa donde se hace la feria. La comuna se elige sola según el punto.
           <span id="f-ubicacion-texto"></span>
           <button type="button" id="btn-quitar-ubicacion" class="secundario sin-margen boton-chico oculto">Quitar ubicación</button>
         </p>
+        <p class="texto-suave">Para marcar el terreno, presiona <strong>Dibujar perímetro</strong> y haz clic en cada esquina; luego <strong>Terminar</strong>.
+          <span id="f-perimetro-texto"></span>
+        </p>
+        <div class="acciones-fila">
+          <button type="button" id="btn-dibujar-perimetro" class="secundario sin-margen boton-chico">Dibujar perímetro</button>
+          <button type="button" id="btn-deshacer-punto" class="secundario sin-margen boton-chico oculto">Deshacer último punto</button>
+          <button type="button" id="btn-terminar-perimetro" class="sin-margen boton-chico oculto">Terminar</button>
+          <button type="button" id="btn-borrar-perimetro" class="peligro sin-margen boton-chico oculto">Borrar perímetro</button>
+        </div>
         <div id="mapa-ubicacion" class="mapa-santiago mapa-chico"></div>
       </div>
       <label class="check columna-completa"><input type="checkbox" id="f-publicada" checked> Publicada (visible para los comerciantes)</label>

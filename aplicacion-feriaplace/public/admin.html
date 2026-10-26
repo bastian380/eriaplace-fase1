@@ -5,6 +5,7 @@
   <nav id="nav-sesion"></nav>
 </header>
 <main class="ancho">
+  <div id="aviso-clave"></div>
   <div id="aviso-cuentas"></div>
   <div class="tarjeta">
     <h2>Solicitudes pendientes</h2>
@@ -55,6 +56,18 @@
     </div>
     <p class="texto-suave">Cuántos puestos tiene cada feria, cuántos están ocupados y libres, y cuánto se ha cobrado.</p>
     <div id="resumen-ocupacion" class="resumen-pagos"></div>
+    <div class="graficos-reporte">
+      <div>
+        <h3>Ocupación de puestos</h3>
+        <div class="leyenda"><span class="muestra ocupado"></span>Ocupados <span class="muestra libre"></span>Libres</div>
+        <div id="grafico-ocupacion" class="grafico-barras"></div>
+      </div>
+      <div>
+        <h3>Cobrado y por cobrar</h3>
+        <div class="leyenda"><span class="muestra cobrado"></span>Cobrado <span class="muestra por-cobrar"></span>Por cobrar</div>
+        <div id="grafico-cobros" class="grafico-barras"></div>
+      </div>
+    </div>
     <table>
       <thead>
         <tr>

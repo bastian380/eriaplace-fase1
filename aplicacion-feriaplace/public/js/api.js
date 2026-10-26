@@ -90,12 +90,19 @@ function pintarNavegacion() {
   }
   const enlaces = sesion.usuario.rol === 'administrador'
     ? '<a href="index.html">Ferias</a><a href="admin.html">Solicitudes</a><a href="admin-usuarios.html">Usuarios</a><a href="admin-ferias.html">Ferias y planos</a>'
-    : '<a href="index.html">Ferias</a><a href="solicitar.html">Solicitar puesto</a><a href="mis-solicitudes.html">Mis solicitudes</a>';
-  contenedor.innerHTML = `${enlaces}<a href="#" id="cerrar-sesion">Salir (${esc(sesion.usuario.nombre)})</a>`;
+    : '<a href="index.html">Ferias</a><a href="solicitar.html">Solicitar puesto</a><a href="mis-solicitudes.html">Mis solicitudes</a><a href="avisos.html" id="enlace-avisos">Avisos</a>';
+  contenedor.innerHTML = `${enlaces}<a href="cuenta.html">Mi cuenta</a><a href="#" id="cerrar-sesion">Salir (${esc(sesion.usuario.nombre)})</a>`;
   document.getElementById('cerrar-sesion').addEventListener('click', (e) => {
     e.preventDefault();
     cerrarSesion();
   });
+  // El comerciante ve cuántos avisos nuevos tiene
+  const enlaceAvisos = document.getElementById('enlace-avisos');
+  if (enlaceAvisos) {
+    apiFetch('/notificaciones').then(({ no_leidas: n }) => {
+      if (n > 0) enlaceAvisos.innerHTML = `Avisos <span class="contador">${n}</span>`;
+    }).catch(() => {});
+  }
 }
 
 // Pie de página común a todas las páginas

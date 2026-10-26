@@ -14,7 +14,7 @@ const PRECIO_MAXIMO = 100000000;
 
 const SQL_FERIA_CON_CONTEO = `
   SELECT f.id, f.nombre, f.lugar, f.fecha_texto, f.descripcion, f.ancho, f.alto, f.publicada,
-         f.comuna, f.latitud, f.longitud, f.precio_puesto,
+         f.comuna, f.latitud, f.longitud, f.perimetro, f.precio_puesto,
          DATE_FORMAT(f.fecha_inicio, '%Y-%m-%d') AS fecha_inicio,
          DATE_FORMAT(f.fecha_cierre, '%Y-%m-%d') AS fecha_cierre,
          COUNT(p.id) AS total_puestos,
@@ -32,6 +32,7 @@ function normalizarConteo(feria) {
     publicada: Boolean(feria.publicada),
     latitud: feria.latitud === null ? null : Number(feria.latitud),
     longitud: feria.longitud === null ? null : Number(feria.longitud),
+    perimetro: typeof feria.perimetro === 'string' ? JSON.parse(feria.perimetro) : feria.perimetro ?? null,
     precio_puesto: feria.precio_puesto === null ? null : Number(feria.precio_puesto),
     total_puestos: Number(feria.total_puestos),
     puestos_disponibles: Number(feria.puestos_disponibles),
@@ -58,6 +59,33 @@ function leerFecha(valor) {
   return { fecha: texto };
 }
 
+const MAX_VERTICES = 100;
+
+// Lee el perímetro de la feria: una lista de puntos [latitud, longitud] que forman un polígono cerrado.
+// Vacío = sin perímetro (null). Devuelve undefined si no vino en la petición (para no borrarlo al editar).
+function leerPerimetro(valor) {
+  if (valor === undefined) return { perimetro: undefined };
+  if (valor === null || valor === '' || (Array.isArray(valor) && valor.length === 0)) return { perimetro: null };
+  if (!Array.isArray(valor) || valor.length < 3 || valor.length > MAX_VERTICES) {
+    return { error: `El perímetro debe tener entre 3 y ${MAX_VERTICES} puntos` };
+  }
+  const puntos = [];
+  for (const punto of valor) {
+    const [lat, lng] = Array.isArray(punto) ? punto.map(Number) : [NaN, NaN];
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !comunaEnPunto(lat, lng)) {
+      return { error: 'Todos los puntos del perímetro deben estar dentro de la Región Metropolitana' };
+    }
+    puntos.push([Number(lat.toFixed(6)), Number(lng.toFixed(6))]);
+  }
+  return { perimetro: puntos };
+}
+
+// Centro aproximado del perímetro (promedio de sus puntos): sirve para el marcador y para saber la comuna
+function centroDe(perimetro) {
+  const suma = perimetro.reduce(([a, b], [lat, lng]) => [a + lat, b + lng], [0, 0]);
+  return [suma[0] / perimetro.length, suma[1] / perimetro.length];
+}
+
 // Valida y limpia los datos generales de una feria
 function leerDatosFeria(body) {
   const nombre = (body.nombre || '').trim();
@@ -71,10 +99,17 @@ function leerDatosFeria(body) {
   }
   let comuna = (body.comuna || '').trim() || null;
   if (comuna && !COMUNAS.includes(comuna)) return { error: 'La comuna no es de la Región Metropolitana' };
-  // La ubicación es opcional, pero si viene deben venir latitud y longitud juntas
-  const sinUbicacion = [body.latitud, body.longitud].every((v) => v === undefined || v === null || v === '');
-  const latitud = sinUbicacion ? null : Number(body.latitud);
-  const longitud = sinUbicacion ? null : Number(body.longitud);
+  const { perimetro, error: errorPerimetro } = leerPerimetro(body.perimetro);
+  if (errorPerimetro) return { error: errorPerimetro };
+  // La ubicación es opcional, pero si viene deben venir latitud y longitud juntas.
+  // Si no se marcó un punto pero sí un perímetro, la ubicación es el centro del perímetro.
+  let sinUbicacion = [body.latitud, body.longitud].every((v) => v === undefined || v === null || v === '');
+  let latitud = sinUbicacion ? null : Number(body.latitud);
+  let longitud = sinUbicacion ? null : Number(body.longitud);
+  if (sinUbicacion && perimetro) {
+    [latitud, longitud] = centroDe(perimetro);
+    sinUbicacion = false;
+  }
   if (!sinUbicacion) {
     const comunaDelPunto = Number.isFinite(latitud) && Number.isFinite(longitud) ? comunaEnPunto(latitud, longitud) : null;
     if (!comunaDelPunto) return { error: 'La ubicación debe estar dentro de la Región Metropolitana' };
@@ -108,6 +143,7 @@ function leerDatosFeria(body) {
       comuna,
       latitud: sinUbicacion ? null : Number(latitud.toFixed(6)),
       longitud: sinUbicacion ? null : Number(longitud.toFixed(6)),
+      perimetro,
     },
   };
 }
@@ -176,10 +212,11 @@ router.post('/', verificarToken, requireRol('administrador'), async (req, res) =
     await conexion.beginTransaction();
     const [resultado] = await conexion.query(
       `INSERT INTO feria (nombre, lugar, fecha_texto, fecha_inicio, fecha_cierre, precio_puesto, descripcion,
-         ancho, alto, publicada, comuna, latitud, longitud)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ancho, alto, publicada, comuna, latitud, longitud, perimetro)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [datos.nombre, datos.lugar, datos.fecha_texto, datos.fecha_inicio, datos.fecha_cierre, datos.precio_puesto,
-        datos.descripcion, datos.ancho, datos.alto, datos.publicada, datos.comuna, datos.latitud, datos.longitud]
+        datos.descripcion, datos.ancho, datos.alto, datos.publicada, datos.comuna, datos.latitud, datos.longitud,
+        datos.perimetro ? JSON.stringify(datos.perimetro) : null]
     );
     for (const p of iniciales.puestos) {
       await conexion.query(
@@ -189,7 +226,8 @@ router.post('/', verificarToken, requireRol('administrador'), async (req, res) =
     }
     await conexion.commit();
     res.status(201).json({
-      id: resultado.insertId, ...datos, publicada: Boolean(datos.publicada), total_puestos: iniciales.puestos.length,
+      id: resultado.insertId, ...datos, perimetro: datos.perimetro ?? null, publicada: Boolean(datos.publicada),
+      total_puestos: iniciales.puestos.length,
     });
   } catch (err) {
     await conexion.rollback();
@@ -216,9 +254,11 @@ router.put('/:id', verificarToken, requireRol('administrador'), async (req, res)
   const [resultado] = await pool.query(
     `UPDATE feria SET nombre = ?, lugar = ?, fecha_texto = ?, fecha_inicio = ?, fecha_cierre = ?, precio_puesto = ?,
        descripcion = ?, ancho = ?, alto = ?, publicada = ?, comuna = ?, latitud = ?, longitud = ?
+       ${datos.perimetro === undefined ? '' : ', perimetro = ?'}
      WHERE id = ?`,
     [datos.nombre, datos.lugar, datos.fecha_texto, datos.fecha_inicio, datos.fecha_cierre, datos.precio_puesto,
       datos.descripcion, datos.ancho, datos.alto, datos.publicada, datos.comuna, datos.latitud, datos.longitud,
+      ...(datos.perimetro === undefined ? [] : [datos.perimetro ? JSON.stringify(datos.perimetro) : null]),
       req.params.id]
   );
   if (resultado.affectedRows === 0) return res.status(404).json({ error: 'Feria no encontrada' });

@@ -461,6 +461,9 @@
   let mapaUbicacion = null;
   let marcadorUbicacion = null;
   let ubicacion = null; // { latitud, longitud } o null
+  let perimetro = null; // [[latitud, longitud], ...] o null
+  let dibujando = null; // puntos del perímetro mientras se dibuja, o null si no se está dibujando
+  let capaPerimetro = null;
 
   function pintarUbicacion() {
     const texto = $('f-ubicacion-texto');
@@ -476,6 +479,33 @@
     const punto = [ubicacion.latitud, ubicacion.longitud];
     if (marcadorUbicacion) marcadorUbicacion.setLatLng(punto);
     else marcadorUbicacion = L.marker(punto).addTo(mapaUbicacion.mapa);
+  }
+
+  // Dibuja el perímetro guardado o el que se está marcando, y ajusta los botones
+  function pintarPerimetro() {
+    $('btn-dibujar-perimetro').classList.toggle('oculto', Boolean(dibujando));
+    $('btn-dibujar-perimetro').textContent = perimetro ? 'Volver a dibujar' : 'Dibujar perímetro';
+    $('btn-deshacer-punto').classList.toggle('oculto', !dibujando);
+    $('btn-terminar-perimetro').classList.toggle('oculto', !dibujando);
+    $('btn-borrar-perimetro').classList.toggle('oculto', !perimetro || Boolean(dibujando));
+    const texto = $('f-perimetro-texto');
+    if (dibujando) {
+      texto.textContent = `Dibujando: ${dibujando.length} ${dibujando.length === 1 ? 'punto' : 'puntos'} (mínimo 3).`;
+    } else {
+      texto.textContent = perimetro ? `Terreno de ${perimetro.length} puntos, ${textoSuperficie(perimetro)}.` : 'Todavía no tiene perímetro.';
+    }
+    if (!mapaUbicacion) return;
+    if (capaPerimetro) capaPerimetro.remove();
+    capaPerimetro = null;
+    if (dibujando) {
+      // Mientras se dibuja: la línea de los puntos marcados y un círculo en cada esquina
+      capaPerimetro = L.layerGroup([
+        L.polyline(dibujando, { color: COLOR_PERIMETRO, weight: 2.5, dashArray: '6 4', interactive: false }),
+        ...dibujando.map((p) => L.circleMarker(p, { radius: 5, color: COLOR_PERIMETRO, fillOpacity: 1, interactive: false })),
+      ]).addTo(mapaUbicacion.mapa);
+    } else if (perimetro) {
+      capaPerimetro = dibujarPerimetro(mapaUbicacion.mapa, perimetro, false, { interactive: false });
+    }
   }
 
   async function prepararMapaUbicacion() {
@@ -494,13 +524,55 @@
         mostrar('mensaje-feria', 'error', 'Ese punto está fuera de la Región Metropolitana.');
         return;
       }
+      if (dibujando) {
+        dibujando.push([e.latlng.lat, e.latlng.lng]);
+        pintarPerimetro();
+        return;
+      }
       ubicacion = { latitud: e.latlng.lat, longitud: e.latlng.lng };
       $('f-comuna').value = comuna;
       mostrar('mensaje-feria');
       pintarUbicacion();
     });
     pintarUbicacion();
+    pintarPerimetro();
   }
+
+  $('btn-dibujar-perimetro').addEventListener('click', () => {
+    dibujando = [];
+    mostrar('mensaje-feria');
+    pintarPerimetro();
+  });
+  $('btn-deshacer-punto').addEventListener('click', () => {
+    dibujando.pop();
+    pintarPerimetro();
+  });
+  $('btn-terminar-perimetro').addEventListener('click', () => {
+    if (dibujando.length === 0) {
+      // Sin puntos nuevos se cancela y queda el perímetro que había
+      dibujando = null;
+      pintarPerimetro();
+      return;
+    }
+    if (dibujando.length < 3) {
+      mostrar('mensaje-feria', 'error', 'El perímetro necesita al menos 3 puntos.');
+      return;
+    }
+    perimetro = dibujando;
+    dibujando = null;
+    // La ubicación de la feria pasa a ser el centro del terreno, y la comuna la de ese punto
+    const lat = perimetro.reduce((s, p) => s + p[0], 0) / perimetro.length;
+    const lng = perimetro.reduce((s, p) => s + p[1], 0) / perimetro.length;
+    ubicacion = { latitud: lat, longitud: lng };
+    $('f-comuna').value = comunaEnPunto(mapaUbicacion.comunas, lat, lng) || $('f-comuna').value;
+    mostrar('mensaje-feria', 'exito', 'Perímetro listo. Presiona Guardar datos para guardarlo.');
+    pintarUbicacion();
+    pintarPerimetro();
+  });
+  $('btn-borrar-perimetro').addEventListener('click', () => {
+    perimetro = null;
+    pintarPerimetro();
+  });
 
   $('btn-quitar-ubicacion').addEventListener('click', () => {
     ubicacion = null;
@@ -520,6 +592,8 @@
     $('f-publicada').checked = f ? f.publicada : true;
     $('f-comuna').value = f ? f.comuna || '' : '';
     ubicacion = f && f.latitud !== null ? { latitud: f.latitud, longitud: f.longitud } : null;
+    perimetro = f && f.perimetro ? f.perimetro : null;
+    dibujando = null;
     $('titulo-datos').textContent = f ? `Datos de "${f.nombre}"` : 'Nueva feria';
     $('btn-guardar-feria').textContent = f ? 'Guardar datos' : 'Crear feria';
     $('btn-eliminar-feria').classList.toggle('oculto', !f);
@@ -529,10 +603,12 @@
     $('tarjeta-datos').classList.remove('oculto');
     if (mapaUbicacion) {
       mapaUbicacion.mapa.invalidateSize();
-      if (ubicacion) mapaUbicacion.mapa.setView([ubicacion.latitud, ubicacion.longitud], 14);
+      if (perimetro) mapaUbicacion.mapa.fitBounds(L.latLngBounds(perimetro), { padding: [20, 20], maxZoom: 18 });
+      else if (ubicacion) mapaUbicacion.mapa.setView([ubicacion.latitud, ubicacion.longitud], 16);
       else mapaUbicacion.mapa.fitBounds(ENCUADRE_SANTIAGO);
     }
     pintarUbicacion();
+    pintarPerimetro();
   }
 
   async function abrirFeria(id, mantenerMensajes) {
@@ -609,7 +685,12 @@
       comuna: $('f-comuna').value,
       latitud: ubicacion ? ubicacion.latitud : null,
       longitud: ubicacion ? ubicacion.longitud : null,
+      perimetro,
     };
+    if (dibujando) {
+      mostrar('mensaje-feria', 'error', 'Termina de dibujar el perímetro (botón Terminar) antes de guardar.');
+      return;
+    }
     if (!feria) {
       cuerpo.cantidad_puestos = Number($('f-cantidad').value || 0);
       cuerpo.tamano_puestos = $('f-tamano-puestos').value;

@@ -1,0 +1,27 @@
+Pedro solicita el puesto A1
+  -> HTTP 201 {"id":1,"estado":"pendiente"}
+
+El administrador asigna A1 a Pedro
+  -> HTTP 200 {"id":1,"estado":"confirmada","puesto_id":1,"monto":150000,"estado_pago":"pendiente"}
+
+Pantalla de Juana: El puesto preferido ya no está disponible
+
+Solicitud sin rubro (dato obligatorio)
+  -> HTTP 400 {"error":"El rubro es obligatorio"}
+
+Solicitud para una feria que no existe
+  -> HTTP 400 {"error":"La feria elegida no existe o no está disponible"}
+
+Solicitud sin sesión (A02, sin token)
+  -> HTTP 401 {"error":"Token no proporcionado"}
+
+Un comerciante intenta asignar un puesto (permiso de administrador)
+  -> HTTP 403 {"error":"No tienes permiso para esta acción"}
+
+Asignar a Juana el puesto A1, que ya está ocupado
+  -> HTTP 409 {"error":"Ese puesto ya no está disponible"}
+
+Historial de solicitudes en la base (GET /api/solicitudes): [{"id":1,"estado":"confirmada","puesto":"A1","monto":150000,"pago":"pendiente"},{"id":2,"estado":"confirmada","puesto":"A2","monto":150000,"pago":"pendiente"}]
+
+Reporte de ocupación (GET /api/reportes/ocupacion)
+  -> HTTP 200 [{"id":1,"nombre":"Feria Navideña Plaza de Maipú","comuna":"Maipú","fecha_inicio":"2026-12-01","fecha_cierre":"2026-12-24","publicada":true,"puestos_total":8,"puestos_ocupados":2,"puestos_libres":6,"porcentaje_ocupacion":25,"solicitudes_pendientes":0,"solicitudes_confirmadas":2,"solicitudes_rechazadas":0,"cobrado":150000,"por_cobrar":150000}]

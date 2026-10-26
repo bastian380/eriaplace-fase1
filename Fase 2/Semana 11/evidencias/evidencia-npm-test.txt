@@ -1,0 +1,25 @@
+
+> feriaplace-backend@1.0.0 test
+> node --test --test-reporter=spec --test-concurrency=1 "test/*.test.js"
+
+✔ el registro valida los datos y deja la cuenta pendiente (197.005832ms)
+✔ una cuenta pendiente no puede iniciar sesión hasta que el administrador la aprueba (144.915428ms)
+✔ el administrador crea una feria y sus puestos se generan solos (24.480255ms)
+✔ la feria guarda el perímetro de su terreno y lo valida (38.695053ms)
+✔ el comerciante solicita un puesto y el administrador se lo asigna con su monto (41.162986ms)
+✔ un puesto ocupado no se puede asignar dos veces (17.414066ms)
+✔ el administrador registra el pago y acepta montos escritos a la chilena (13.332444ms)
+✔ el comerciante recibe avisos de cada paso y puede marcarlos como leídos (12.282787ms)
+✔ la credencial QR del puesto se verifica sin sesión y no se puede falsificar (23.333659ms)
+✔ el reporte de ocupación calcula puestos, porcentaje y cobros (7.179523ms)
+✔ el reporte también se descarga como CSV para Excel (4.69673ms)
+✔ se bloquea el inicio de sesión después de 5 intentos fallidos (321.603916ms)
+✔ cada usuario puede cambiar su contraseña (162.213902ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1259.246208

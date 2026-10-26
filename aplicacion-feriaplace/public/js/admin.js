@@ -132,7 +132,7 @@
         <tr data-id="${s.id}">
           <td>${esc(s.comerciante_nombre)}<br><small>${esc(s.comerciante_email)}</small></td>
           <td>${esc(s.feria_nombre || '-')}</td>
-          <td>${esc(s.puesto_codigo || '-')}</td>
+          <td>${esc(s.puesto_codigo || '-')}<br><a href="credencial.html?id=${s.id}" target="_blank">Credencial</a></td>
           <td><input class="monto" type="number" min="0" step="1" value="${s.monto ?? ''}" placeholder="Sin monto"></td>
           <td><span class="badge ${pagado ? 'pagado' : 'pendiente'}">${pagado ? 'pagado' : 'pendiente'}</span>${fecha}</td>
           <td class="acciones-fila">
@@ -184,6 +184,7 @@
         <div>Ferias<strong>${ferias.length}</strong></div>
         <div>Puestos ocupados<strong>${ocupados} de ${puestos}</strong><span class="texto-suave">${String(puestos === 0 ? 0 : Math.round((ocupados / puestos) * 1000) / 10).replace('.', ',')} % de ocupación</span></div>
         <div>Puestos libres<strong>${total('puestos_libres')}</strong></div>`;
+      pintarGraficos(ferias);
       tabla.innerHTML = ferias.length === 0
         ? '<tr><td colspan="9">Todavía no hay ferias creadas.</td></tr>'
         : ferias.map((f) => `
@@ -201,6 +202,38 @@
     } catch (err) {
       document.getElementById('mensaje-ocupacion').innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
     }
+  }
+
+  // Gráficos de barras del reporte: una fila por feria, hechos con HTML y CSS (sin librerías)
+  function pintarGraficos(ferias) {
+    const graficoOcupacion = document.getElementById('grafico-ocupacion');
+    const graficoCobros = document.getElementById('grafico-cobros');
+    const conPuestos = ferias.filter((f) => f.puestos_total > 0);
+    graficoOcupacion.innerHTML = conPuestos.length === 0
+      ? '<p class="texto-suave">Todavía no hay ferias con puestos.</p>'
+      : conPuestos.map((f) => {
+        const ancho = (f.puestos_ocupados / f.puestos_total) * 100;
+        return `
+          <div class="barra-fila" title="${esc(f.nombre)}: ${f.puestos_ocupados} ocupados y ${f.puestos_libres} libres">
+            <span class="barra-nombre">${esc(f.nombre)}</span>
+            <div class="barra-pista"><div class="barra-parte ocupado" style="width:${ancho}%"></div></div>
+            <span class="barra-valor">${f.puestos_ocupados} de ${f.puestos_total} · ${String(f.porcentaje_ocupacion).replace('.', ',')} %</span>
+          </div>`;
+      }).join('');
+
+    // Los montos se dibujan a la misma escala para comparar ferias: la más grande ocupa todo el ancho
+    const conMontos = ferias.filter((f) => f.cobrado + f.por_cobrar > 0);
+    const mayor = Math.max(0, ...conMontos.map((f) => f.cobrado + f.por_cobrar));
+    graficoCobros.innerHTML = conMontos.length === 0
+      ? '<p class="texto-suave">Todavía no hay montos por cobrar.</p>'
+      : conMontos.map((f) => `
+          <div class="barra-fila" title="${esc(f.nombre)}: cobrado ${formatearPesos(f.cobrado)}, por cobrar ${formatearPesos(f.por_cobrar)}">
+            <span class="barra-nombre">${esc(f.nombre)}</span>
+            <div class="barra-pista">
+              <div class="barra-parte cobrado" style="width:${(f.cobrado / mayor) * 100}%"></div><div class="barra-parte por-cobrar" style="width:${(f.por_cobrar / mayor) * 100}%"></div>
+            </div>
+            <span class="barra-valor">${formatearPesos(f.cobrado)} de ${formatearPesos(f.cobrado + f.por_cobrar)}</span>
+          </div>`).join('');
   }
 
   // El CSV se pide con el token de la sesión y se descarga como archivo
@@ -222,6 +255,12 @@
       aviso.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
     }
   });
+
+  // Aviso si el administrador sigue usando la contraseña de ejemplo del README
+  if (sesion.clave_de_ejemplo) {
+    document.getElementById('aviso-clave').innerHTML = `<div class="mensaje error">Estás usando la contraseña de ejemplo
+      del proyecto. <a href="cuenta.html">Cámbiala aquí</a> antes de publicar la aplicación.</div>`;
+  }
 
   // Aviso de cuentas nuevas esperando aprobación
   apiFetch('/usuarios?estado=pendiente').then((pendientes) => {

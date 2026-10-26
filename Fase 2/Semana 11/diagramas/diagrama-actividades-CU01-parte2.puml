@@ -1,0 +1,65 @@
+@startuml
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 12
+skinparam ActivityBorderColor #555555
+skinparam ArrowColor #444444
+skinparam swimlaneTitleFontStyle bold
+skinparam swimlaneTitleFontSize 14
+title Diagrama 2 de 2 · CU-01 Solicitar y asignar un puesto en una feria de temporada (FeriaPlace v1.0, 20-10-2026)\nParte 2: el administrador asigna, registra el pago y el sistema informa
+
+|#F3F6FA|Comerciante|
+|#FFFFFF|Sistema FeriaPlace (API + MySQL)|
+|#F3F6FA|Administrador|
+start
+#E3F2FD:Viene del diagrama 1 (A07 solicitud pendiente);
+#C8E6C9:A08 Revisa las solicitudes pendientes.
+Solo ve los puestos libres de esa feria
+con el preferido marcado [F06, F07];
+if (¿Aprueba la solicitud?) then (No)
+  #C8E6C9:A09 Rechaza con un motivo.
+  Estado = rechazada y aviso
+  al comerciante [F06, F07];
+  stop
+else (Sí)
+endif
+#C8E6C9:A10 Elige el puesto
+y presiona Asignar [F06];
+|Sistema FeriaPlace (API + MySQL)|
+#C8E6C9:A11 Abre transacción y bloquea
+la solicitud y el puesto
+(SELECT ... FOR UPDATE) [F06];
+while (¿Puesto disponible y de la misma feria?) is (No)
+  #C8E6C9:A12 Rollback y aviso "Ese puesto ya
+  no está disponible", el administrador
+  elige otro (vuelve a A11) [F06];
+endwhile (Sí)
+#C8E6C9:A13 Registra la asignación: puesto = ocupado,
+solicitud = confirmada, monto y
+pago pendiente (COMMIT) [F06, F08];
+#FFF59D:A14 Crea el aviso en la app
+y envía correo si hay SMTP
+configurado [F07];
+|Comerciante|
+#C8E6C9:A15 Ve en "Mis solicitudes" el puesto,
+el monto, el estado del pago
+y su credencial QR [F07, F08];
+|Administrador|
+#C8E6C9:A16 Marca el pago como pagado
+en "Pagos de puestos" [F08];
+|Sistema FeriaPlace (API + MySQL)|
+#FFF59D:A17 Actualiza el plano (puesto gris)
+y el reporte de ocupación,
+gráficos y CSV (la tarjeta del reporte
+se refresca al recargar) [F04, F09];
+#FFCDD2:A18 Inspector municipal escanea el QR
+con su celular en terreno
+(requiere la app publicada) [F07, F10];
+stop
+
+legend right
+  <color:#43A047>■■</color> Implementada y comprobada
+  <color:#F9D71C>■■</color> Parcial
+  <color:#E57373>■■</color> Pendiente
+  [Fxx] = funcionalidad de la ficha 04
+endlegend
+@enduml

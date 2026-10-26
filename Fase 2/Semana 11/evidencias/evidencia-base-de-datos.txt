@@ -1,0 +1,23 @@
++----+--------------+-------------------------------+------------+--------+--------+-------------+
+| id | comerciante  | rubro                         | estado     | puesto | monto  | estado_pago |
++----+--------------+-------------------------------+------------+--------+--------+-------------+
+|  1 | Pedro Soto   | Pan de pascua                 | confirmada | A1     | 150000 | pendiente   |
+|  2 | Juana Pérez  | Juguetes y adornos navideños  | confirmada | A2     | 150000 | pagado      |
++----+--------------+-------------------------------+------------+--------+--------+-------------+
++--------+------------+
+| codigo | estado     |
++--------+------------+
+| A1     | ocupado    |
+| A2     | ocupado    |
+| A3     | disponible |
+| A4     | disponible |
++--------+------------+
++------------+---------------------------+
+| usuario_id | titulo                    |
++------------+---------------------------+
+|          2 | Tu cuenta fue aprobada    |
+|          3 | Tu cuenta fue aprobada    |
+|          3 | Te asignamos el puesto A1 |
+|          2 | Te asignamos el puesto A2 |
+|          2 | Recibimos tu pago         |
++------------+---------------------------+

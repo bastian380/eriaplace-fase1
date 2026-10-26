@@ -19,8 +19,16 @@
       <label for="feria">Feria *</label>
       <select id="feria" required></select>
 
-      <label>Puesto preferido (opcional, toca un puesto verde del plano)</label>
-      <div id="plano"></div>
+      <label>Puesto preferido (opcional)</label>
+      <p class="texto-suave sin-margen">Este es el plano de la feria visto desde arriba. Cada rectángulo es un puesto y su tamaño en el dibujo es su tamaño real. Toca un puesto <strong>verde</strong> para elegirlo; los <strong>grises</strong> ya están ocupados.</p>
+      <div class="leyenda">
+        <span><span class="punto disponible"></span>Disponible</span>
+        <span><span class="punto ocupado"></span>Ocupado</span>
+        <span><span class="punto elegido"></span>Tu elección</span>
+      </div>
+      <div id="plano" class="plano-solicitud"></div>
+      <div id="puesto-elegido" class="puesto-elegido"></div>
+      <label for="puesto">O elígelo de la lista</label>
       <div class="acciones-fila">
         <select id="puesto"></select>
       </div>

@@ -479,3 +479,63 @@ footer.pie a:hover { color: white; text-decoration: underline; }
   font-size: 0.8rem;
   color: #9ca3af;
 }
+
+/* Gráficos del reporte de ocupación (admin) */
+.graficos-reporte { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+.graficos-reporte h3 { margin: 0 0 4px; font-size: 1rem; }
+.leyenda { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #4b5563; margin-bottom: 8px; }
+.muestra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-left: 8px; }
+.muestra:first-child { margin-left: 0; }
+.grafico-barras { display: flex; flex-direction: column; gap: 8px; }
+.barra-fila { display: grid; grid-template-columns: minmax(80px, 30%) 1fr; grid-template-areas: "nombre pista" ". valor"; column-gap: 10px; align-items: center; }
+.barra-nombre { grid-area: nombre; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barra-pista { grid-area: pista; display: flex; height: 18px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.barra-parte { height: 100%; }
+.barra-parte + .barra-parte { border-left: 2px solid #fff; }
+.barra-valor { grid-area: valor; font-size: 0.8rem; color: #4b5563; }
+.barra-parte.ocupado, .muestra.ocupado { background: #1f6f4f; }
+.muestra.libre { background: #e5e7eb; }
+.barra-parte.cobrado, .muestra.cobrado { background: #1f6f4f; }
+.barra-parte.por-cobrar, .muestra.por-cobrar { background: #d97706; }
+@media (max-width: 800px) {
+  .graficos-reporte { grid-template-columns: 1fr; }
+}
+#aviso-clave .mensaje, #aviso-cuentas .mensaje { margin: 0 0 16px; }
+/* Plano para elegir puesto al solicitar */
+.punto.elegido { background: #f59e0b; }
+.plano-solicitud .plano-puesto.disponible.seleccionado { background: #f59e0b; color: #111827; }
+.puesto-elegido { margin: 10px 0; padding: 10px 12px; border-radius: 6px; background: #f3f4f6; color: #4b5563; font-size: 0.9rem; }
+.puesto-elegido.activo { background: #fef3c7; color: #1f2937; border: 1px solid #f59e0b; }
+.puesto-elegido button { margin: 0 0 0 8px; }
+.punto.terreno-feria { background: rgba(194, 65, 12, 0.3); border: 2px solid #c2410c; border-radius: 2px; }
+
+/* Avisos al comerciante */
+nav .contador { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 2px; border-radius: 9px; background: #d97706; color: #fff; font-size: 0.75rem; text-align: center; }
+.aviso { border-left: 4px solid #e5e7eb; padding: 10px 14px; margin-bottom: 10px; background: #f9fafb; border-radius: 6px; }
+.aviso.nuevo { border-left-color: #d97706; background: #fffbeb; }
+.aviso p { margin: 6px 0; }
+.aviso-titulo { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* Credencial del puesto */
+.credencial { max-width: 560px; margin: 0 auto 16px; background: #fff; border: 2px solid #1f6f4f; border-radius: 12px; overflow: hidden; }
+.credencial-encabezado { background: #1f6f4f; color: #fff; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; }
+.credencial-cuerpo { display: grid; grid-template-columns: 200px 1fr; gap: 18px; padding: 18px; align-items: center; }
+.credencial-cuerpo p { margin: 0 0 8px; }
+.credencial-qr svg { width: 100%; height: auto; display: block; }
+.credencial-puesto { font-size: 1.8rem; font-weight: 700; color: #1f6f4f; }
+.credencial-codigo { margin: 0; padding: 8px 18px 14px; font-family: monospace; font-size: 0.85rem; color: #4b5563; }
+@media (max-width: 520px) { .credencial-cuerpo { grid-template-columns: 1fr; } .credencial-qr { max-width: 220px; margin: 0 auto; } }
+@media print {
+  header, footer.pie, .sin-imprimir { display: none !important; }
+  body { background: #fff; }
+  .credencial { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* Verificación del inspector */
+.verificacion { border-radius: 10px; padding: 16px; margin: 12px 0; display: flex; flex-direction: column; gap: 4px; }
+.verificacion strong { font-size: 1.4rem; }
+.verificacion.ok { background: #dcfce7; color: #166534; }
+.verificacion.alerta { background: #fee2e2; color: #991b1b; }
+.verificacion-detalle { list-style: none; padding: 0; margin: 0 0 16px; }
+.verificacion-detalle li { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid #e5e7eb; }
+.verificacion-detalle li > span:first-child { width: 90px; flex-shrink: 0; color: #6b7280; }

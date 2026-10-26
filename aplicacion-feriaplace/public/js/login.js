@@ -21,6 +21,6 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
     }
     window.location.href = datos.usuario.rol === 'administrador' ? 'admin.html' : 'index.html';
   } catch (err) {
-    mensaje.innerHTML = `<div class="mensaje error">${err.message}</div>`;
+    mensaje.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
   }
 });
