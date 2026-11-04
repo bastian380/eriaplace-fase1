@@ -1,0 +1,23 @@
+Prueba de control (03-11-2026): se quitó temporalmente FOR UPDATE de PUT /api/solicitudes/:id/asignar
+para comprobar que las pruebas de concurrencia detectan la falla. Luego se restauró el código original.
+
+✖ concurrencia: dos solicitudes que piden el mismo puesto al mismo tiempo, solo una lo obtiene (709.621565ms)
+✖ concurrencia: una misma solicitud asignada a dos puestos a la vez ocupa un solo puesto (29.930379ms)
+✖ el bloqueo de fila hace esperar a la segunda transacción hasta que la primera termina (520.8469ms)
+✔ permisos: sin sesión o con un token falso la API responde 401 (14.588096ms)
+✔ permisos: un comerciante no puede usar acciones del administrador (403) (33.272012ms)
+✔ permisos: el administrador no puede pedir puestos a nombre de un comerciante (403) (3.306953ms)
+✔ cuenta pendiente: no inicia sesión ni puede pedir un puesto (310.358128ms)
+✔ puesto ocupado: no se puede pedir como preferido ni asignar a otra solicitud (409) (16.381945ms)
+
+  AssertionError [ERR_ASSERTION]: ronda 1: una asignación gana y la otra recibe 409
+  + actual - expected
+  
+    [
+      200,
+  +   200
+  -   409
+    ]
+  
+      at TestContext.<anonymous> (backend/test/seguridad.test.js:81:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)

@@ -1,0 +1,26 @@
+﻿Fecha y hora de ejecucion: 2026-11-03 21:19:02 (hora local del PC)
+Base consultada: feriaplace (sesion en modo solo lectura)
+
+Consulta 1:
+SELECT u.nombre, s.estado, p.codigo, p.estado AS estado_puesto, s.monto, s.estado_pago FROM solicitud s JOIN puesto p ON p.id = s.puesto_id JOIN usuario u ON u.id = s.usuario_id;
+
++------------+------------+--------+---------------+-------+-------------+
+| nombre     | estado     | codigo | estado_puesto | monto | estado_pago |
++------------+------------+--------+---------------+-------+-------------+
+| Juan Pérez | confirmada | A5     | ocupado       | NULL  | pendiente   |
+| Juan Pérez | confirmada | A4     | ocupado       | NULL  | pendiente   |
+| Juan Pérez | confirmada | A3     | ocupado       | NULL  | pendiente   |
+| Juan Pérez | confirmada | A2     | ocupado       | NULL  | pendiente   |
+| Juan Pérez | confirmada | A1     | ocupado       | NULL  | pendiente   |
++------------+------------+--------+---------------+-------+-------------+
+5 fila(s)
+
+Consulta 2:
+SELECT COUNT(*) AS puestos_con_mas_de_una_asignacion FROM (SELECT puesto_id FROM solicitud WHERE estado='confirmada' GROUP BY puesto_id HAVING COUNT(*)>1) d;
+
++-----------------------------------+
+| puestos_con_mas_de_una_asignacion |
++-----------------------------------+
+| 0                                 |
++-----------------------------------+
+1 fila(s)

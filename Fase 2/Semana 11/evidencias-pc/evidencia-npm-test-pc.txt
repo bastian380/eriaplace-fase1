@@ -1,0 +1,37 @@
+﻿Fecha y hora de ejecucion: 2026-11-03 21:41:22 (hora local del PC)
+Comando: npm test (en backend\), base de pruebas feriaplace_test
+Codigo de salida: 0
+
+
+> feriaplace-backend@1.0.0 test
+> node --test --test-reporter=spec --test-concurrency=1 "test/*.test.js"
+
+✔ el registro valida los datos y deja la cuenta pendiente (543.1602ms)
+✔ una cuenta pendiente no puede iniciar sesión hasta que el administrador la aprueba (196.7795ms)
+✔ el administrador crea una feria y sus puestos se generan solos (68.9518ms)
+✔ la feria guarda el perímetro de su terreno y lo valida (90.0596ms)
+✔ el comerciante solicita un puesto y el administrador se lo asigna con su monto (110.6534ms)
+✔ un puesto ocupado no se puede asignar dos veces (58.2699ms)
+✔ el administrador registra el pago y acepta montos escritos a la chilena (46.9212ms)
+✔ el comerciante recibe avisos de cada paso y puede marcarlos como leídos (32.3188ms)
+✔ la credencial QR del puesto se verifica sin sesión y no se puede falsificar (61.5289ms)
+✔ el reporte de ocupación calcula puestos, porcentaje y cobros (34.5562ms)
+✔ el reporte también se descarga como CSV para Excel (14.3637ms)
+✔ se bloquea el inicio de sesión después de 5 intentos fallidos (420.8047ms)
+✔ cada usuario puede cambiar su contraseña (180.9504ms)
+✔ concurrencia: dos solicitudes que piden el mismo puesto al mismo tiempo, solo una lo obtiene (2008.2547ms)
+✔ concurrencia: una misma solicitud asignada a dos puestos a la vez ocupa un solo puesto (55.8179ms)
+✔ el bloqueo de fila hace esperar a la segunda transacción hasta que la primera termina (542.6929ms)
+✔ permisos: sin sesión o con un token falso la API responde 401 (36.6731ms)
+✔ permisos: un comerciante no puede usar acciones del administrador (403) (41.8858ms)
+✔ permisos: el administrador no puede pedir puestos a nombre de un comerciante (403) (23.0665ms)
+✔ cuenta pendiente: no inicia sesión ni puede pedir un puesto (355.5948ms)
+✔ puesto ocupado: no se puede pedir como preferido ni asignar a otra solicitud (409) (44.9989ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5801.6893

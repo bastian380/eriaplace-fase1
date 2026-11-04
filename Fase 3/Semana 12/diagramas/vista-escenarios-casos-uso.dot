@@ -1,0 +1,21 @@
+digraph G {
+graph [fontname="DejaVu Sans", fontsize=16, label=<<B>Vista de escenarios (+1) · casos de uso de FeriaPlace v1.0</B>>, labelloc=t, rankdir=LR, bgcolor=white, pad=0.3, nodesep=0.5, ranksep=0.8 , nodesep=0.25];
+node [fontname="DejaVu Sans", fontsize=11, color="#1F4E79"];
+edge [fontname="DejaVu Sans", fontsize=10, color="#444444"];
+
+node [shape=box, style="rounded,filled", fillcolor="#FFFFFF", penwidth=2];
+V [label="«actor»\nVisitante"]; C [label="«actor»\nComerciante"]; A [label="«actor»\nAdministrador\n(organizador)"]; I [label="«actor»\nInspector\nmunicipal"];
+subgraph cluster_s { label=<<B>FeriaPlace</B>>; style=rounded; color="#1F4E79";
+  node [shape=ellipse, style=filled, fillcolor="#F3F7FB"];
+  U1 [label="Ver calendario, mapa\ny plano de ferias"]; U2 [label="Registrarse\n(cuenta pendiente)"]; U3 [label="Iniciar sesión"];
+  U4 [label=<<B>CU-01 Solicitar un puesto</B>>, fillcolor="#FFE9B3"]; U5 [label="Ver Mis solicitudes,\navisos y credencial QR"];
+  U6 [label="Aprobar o rechazar\ncuentas"]; U7 [label="Crear feria, plano\ny perímetro"];
+  U8 [label=<<B>CU-01 Asignar puesto</B>>, fillcolor="#FFE9B3"]; U9 [label="Registrar pago manual"];
+  U10 [label="Ver reporte de ocupación\ny exportar CSV"]; U11 [label="Verificar credencial QR"];
+}
+edge [arrowhead=none];
+V -> U1; V -> U2; C -> U3; C -> U4; C -> U5; C -> U1;
+A -> U3; A -> U6; A -> U7; A -> U8; A -> U9; A -> U10; I -> U11;
+U8 -> U4 [style=dashed, arrowhead=vee, label="«resuelve»"];
+U9 -> U8 [style=dashed, arrowhead=vee, label="«extend»"];
+}

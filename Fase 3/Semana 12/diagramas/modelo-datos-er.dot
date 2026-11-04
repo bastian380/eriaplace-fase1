@@ -1,0 +1,21 @@
+digraph G {
+graph [fontname="DejaVu Sans", fontsize=16, label=<<B>Modelo de datos implementado (MySQL 8) · 6 tablas · migraciones 001 a 007</B>>, labelloc=t, rankdir=LR, bgcolor=white, pad=0.3, nodesep=0.5, ranksep=0.8 ];
+node [fontname="DejaVu Sans", fontsize=11, color="#1F4E79"];
+edge [fontname="DejaVu Sans", fontsize=10, color="#444444"];
+node [shape=plaintext];
+usuario [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#9C5700" BGCOLOR="white"><TR><TD BGCOLOR="#FFF4E0"><B>usuario</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT" BALIGN="LEFT">nombre, email (UQ), telefono<BR/>password_hash (bcrypt)<BR/>rol: comerciante | administrador<BR/>estado: pendiente | aprobado | rechazado<BR/>motivo_registro, comentario_admin<BR/>creado_en, revisado_en</TD></TR></TABLE>>];
+feria [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#9C5700" BGCOLOR="white"><TR><TD BGCOLOR="#FFF4E0"><B>feria</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> id</TD></TR><TR><TD ALIGN="LEFT" BALIGN="LEFT">nombre, lugar, comuna<BR/>latitud, longitud, perimetro (JSON)<BR/>fecha_inicio, fecha_cierre, fecha_texto<BR/>precio_puesto, descripcion<BR/>ancho, alto, publicada, creado_en</TD></TR></TABLE>>];
+puesto [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#9C5700" BGCOLOR="white"><TR><TD BGCOLOR="#FFF4E0"><B>puesto</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> id · <B>FK</B> feria_id</TD></TR><TR><TD ALIGN="LEFT" BALIGN="LEFT">codigo (UQ con feria_id), zona<BR/>tamano, estado: disponible | ocupado<BR/>pos_x, pos_y, ancho, alto<BR/>precio (NULL = precio base)</TD></TR></TABLE>>];
+elemento_plano [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#9C5700" BGCOLOR="white"><TR><TD BGCOLOR="#FFF4E0"><B>elemento_plano</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> id · <B>FK</B> feria_id (CASCADE)</TD></TR><TR><TD ALIGN="LEFT" BALIGN="LEFT">tipo, etiqueta, color, direccion<BR/>pos_x, pos_y, ancho, alto</TD></TR></TABLE>>];
+solicitud [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#9C5700" BGCOLOR="white"><TR><TD BGCOLOR="#FFF4E0"><B>solicitud</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> id · <B>FK</B> usuario_id, feria_id,<BR ALIGN="LEFT"/>puesto_preferido_id, puesto_id</TD></TR><TR><TD ALIGN="LEFT" BALIGN="LEFT">rubro, zona_preferida, tamano_preferido<BR/>comentario<BR/>estado: pendiente | confirmada | rechazada<BR/>monto, estado_pago, pagado_en<BR/>comentario_admin, creado_en, resuelto_en</TD></TR></TABLE>>];
+notificacion [label=<<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#9C5700" BGCOLOR="white"><TR><TD BGCOLOR="#FFF4E0"><B>notificacion</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> id · <B>FK</B> usuario_id (CASCADE)</TD></TR><TR><TD ALIGN="LEFT" BALIGN="LEFT">titulo, mensaje, enlace<BR/>leida, enviada_correo, creado_en</TD></TR></TABLE>>];
+
+edge [arrowhead=crowodot, arrowtail=teetee, dir=both];
+usuario -> solicitud [label="envía"];
+usuario -> notificacion [label="recibe"];
+feria -> puesto [label="contiene"];
+feria -> elemento_plano [label="dibuja"];
+feria -> solicitud [label="recibe"];
+puesto -> solicitud [label="asignado / preferido", arrowtail=teeodot];
+{rank=same; usuario; feria}
+}

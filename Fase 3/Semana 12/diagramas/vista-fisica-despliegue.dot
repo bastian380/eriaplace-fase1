@@ -1,0 +1,18 @@
+digraph G {
+graph [fontname="DejaVu Sans", fontsize=16, label=<<B>Vista física (despliegue) · FeriaPlace v1.0</B>>, labelloc=t, rankdir=LR, bgcolor=white, pad=0.3, nodesep=0.5, ranksep=0.8 ];
+node [fontname="DejaVu Sans", fontsize=11, color="#1F4E79"];
+edge [fontname="DejaVu Sans", fontsize=10, color="#444444"];
+
+node [shape=box3d, style=filled, fillcolor="#FAFAFA"];
+CLI [label="«dispositivo»\nPC o celular del usuario\n─────────────\nNavegador web\n(HTML, CSS, JS, Leaflet)"];
+INS [label="«dispositivo»\nCelular del inspector\n─────────────\nCámara + navegador\nverificar.html"];
+SRV [label="«servidor de aplicación»\nv1.0: PC del estudiante (Windows)\nopción: contenedor Docker (Railway)\n─────────────\nNode.js 22 · Express 4 · puerto 4000\nsirve public/ y /api\n.env (DB_*, JWT_SECRET, SMTP_*)"];
+DBS [label="«servidor de base de datos»\nmismo equipo o MySQL gestionado\n─────────────\nMySQL 8.4\nferiaplace (6 tablas)\nferiaplace_test (pruebas)", fillcolor="#FFF4E0"];
+OSM [shape=box, style="rounded,dashed", label="OpenStreetMap\n(teselas)"];
+SMTP [shape=box, style="rounded,dashed", label="SMTP (Gmail)\nopcional"];
+CLI -> SRV [label="HTTP(S) · JSON · JWT"];
+INS -> SRV [label="HTTPS · GET /api/credenciales/\nverificar/:codigo", style=dashed];
+CLI -> OSM [label="HTTPS", style=dashed];
+SRV -> DBS [label="TCP 3306 · mysql2"];
+SRV -> SMTP [label="TCP 587 · nodemailer", style=dashed];
+}

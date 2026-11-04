@@ -1,0 +1,53 @@
+mysql> -- Base feriaplace, caso de uso CU-01 (Feria Navideña de Peñalolén, puesto A3)
+--------------
+SELECT CONVERT_TZ(NOW(), '+00:00', '-03:00') AS fecha_consulta_chile, VERSION() AS version_mysql
+--------------
+
++----------------------+-------------------------+
+| fecha_consulta_chile | version_mysql           |
++----------------------+-------------------------+
+| 2026-11-03 16:45:48  | 8.0.46-0ubuntu0.24.04.4 |
++----------------------+-------------------------+
+--------------
+SELECT s.id AS solicitud, u.nombre AS comerciante, s.estado, p.codigo, p.estado AS estado_puesto, s.monto, s.estado_pago, s.pagado_en
+FROM solicitud s JOIN puesto p ON p.id = s.puesto_id JOIN usuario u ON u.id = s.usuario_id
+WHERE u.email = 'juana.perez@correo.cl'
+--------------
+
++-----------+--------------+------------+--------+---------------+--------+-------------+---------------------+
+| solicitud | comerciante  | estado     | codigo | estado_puesto | monto  | estado_pago | pagado_en           |
++-----------+--------------+------------+--------+---------------+--------+-------------+---------------------+
+|         1 | Juana Pérez  | confirmada | A3     | ocupado       | 150000 | pagado      | 2026-11-03 19:45:46 |
++-----------+--------------+------------+--------+---------------+--------+-------------+---------------------+
+--------------
+SELECT id, nombre, rol, estado, LEFT(password_hash, 7) AS inicio_hash, LENGTH(password_hash) AS largo_hash
+FROM usuario WHERE email = 'juana.perez@correo.cl'
+--------------
+
++----+--------------+-------------+----------+-------------+------------+
+| id | nombre       | rol         | estado   | inicio_hash | largo_hash |
++----+--------------+-------------+----------+-------------+------------+
+|  2 | Juana Pérez  | comerciante | aprobado | $2b$10$     |         60 |
++----+--------------+-------------+----------+-------------+------------+
+--------------
+SELECT COUNT(*) AS puestos_con_mas_de_una_asignacion FROM (
+  SELECT puesto_id FROM solicitud WHERE estado = 'confirmada' GROUP BY puesto_id HAVING COUNT(*) > 1
+) AS duplicados
+--------------
+
++-----------------------------------+
+| puestos_con_mas_de_una_asignacion |
++-----------------------------------+
+|                                 0 |
++-----------------------------------+
+--------------
+SELECT usuario_id, titulo FROM notificacion ORDER BY id
+--------------
+
++------------+---------------------------+
+| usuario_id | titulo                    |
++------------+---------------------------+
+|          2 | Tu cuenta fue aprobada    |
+|          2 | Te asignamos el puesto A3 |
+|          2 | Recibimos tu pago         |
++------------+---------------------------+

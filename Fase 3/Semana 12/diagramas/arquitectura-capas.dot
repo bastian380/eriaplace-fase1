@@ -1,0 +1,13 @@
+digraph G {
+graph [fontname="DejaVu Sans", fontsize=16, label=<<B>Arquitectura general en capas · FeriaPlace v1.0</B>>, labelloc=t, rankdir=TB, bgcolor=white, pad=0.3, nodesep=0.5, ranksep=0.8 ];
+node [fontname="DejaVu Sans", fontsize=11, color="#1F4E79"];
+edge [fontname="DejaVu Sans", fontsize=10, color="#444444"];
+
+node [shape=box, style="rounded,filled", fillcolor="#F3F7FB", width=7];
+P [label=<<B>Capa de presentación</B><BR/>HTML5 · CSS3 · JavaScript (sin framework) · Leaflet 1.9<BR/>Comerciante: inicio, solicitar, mis solicitudes, avisos, credencial · Admin: ferias y planos, usuarios, solicitudes, pagos y reporte>];
+S [label=<<B>Capa de seguridad</B><BR/>JWT (jsonwebtoken) · verificarToken · requireRol · límite de intentos · bcrypt>];
+N [label=<<B>Capa de negocio · API REST (Node.js 22 + Express 4)</B><BR/>8 routers: auth, usuarios, ferias, puestos, solicitudes, reportes, credenciales, notificaciones<BR/>Servicios: plano, elementos, comunas, credencial QR, notificar (nodemailer)>];
+D [label=<<B>Capa de acceso a datos</B><BR/>mysql2/promise · pool de 10 conexiones · consultas parametrizadas · transacciones con SELECT ... FOR UPDATE>];
+B [shape=cylinder, fillcolor="#FFF4E0", width=4, label=<<B>MySQL 8.4</B><BR/>usuario · feria · puesto · elemento_plano · solicitud · notificacion>];
+P -> S [label="HTTP + JSON (fetch)"]; S -> N; N -> D; D -> B [label="SQL"];
+}

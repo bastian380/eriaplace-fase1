@@ -1,0 +1,10 @@
+# Presentaciones personales (no se suben)
+*.pptx
+*.ppt
+Presentacion_*.pdf
+Guion_Presentacion_*
+Preguntas_probables_*
+
+# Aplicación
+node_modules/
+.env

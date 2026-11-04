@@ -1,0 +1,25 @@
+digraph G {
+graph [fontname="DejaVu Sans", fontsize=16, label=<<B>Estructura del código · repositorio FeriaPlace</B>>, labelloc=t, rankdir=LR, bgcolor=white, pad=0.3, nodesep=0.5, ranksep=0.8 , compound=true];
+node [fontname="DejaVu Sans", fontsize=11, color="#1F4E79"];
+edge [fontname="DejaVu Sans", fontsize=10, color="#444444"];
+
+subgraph cluster_root { label=<<B>proyecto/</B>>; style=rounded; color="#1F4E79";
+  subgraph cluster_pub { label="public/ · frontend estático"; style=dashed;
+    H [shape=folder, style=filled, fillcolor="#F3F7FB", label="*.html (13 páginas)"]; J [shape=folder, style=filled, fillcolor="#F3F7FB", label="js/ (17 módulos)\napi, inicio, plano, mapa-santiago,\nadmin*, solicitar, calendario..."];
+    C [shape=folder, style=filled, fillcolor="#F3F7FB", label="css/style.css"]; G [shape=folder, style=filled, fillcolor="#F3F7FB", label="datos/comunas-rm.geojson"]; L [shape=folder, style=filled, fillcolor="#F3F7FB", label="vendor/leaflet"];
+  }
+  subgraph cluster_be { label="backend/ · API REST"; style=dashed;
+    CORE [shape=folder, style=filled, fillcolor="#F3F7FB", label="src/ index.js · app.js · db.js"]; MW [shape=folder, style=filled, fillcolor="#F3F7FB", label="src/middleware/\nauth · limite-intentos"];
+    RT [shape=folder, style=filled, fillcolor="#F3F7FB", label="src/routes/ (8 routers)"]; SV [shape=folder, style=filled, fillcolor="#F3F7FB", label="src/ plano · elementos · comunas\ncredencial · notificar"];
+    OPS [shape=folder, style=filled, fillcolor="#F3F7FB", label="src/ migrar · instalar\nseed · vaciar-ferias"]; T [shape=folder, style=filled, fillcolor="#E8F5E9", label="test/ flujo.test.js (13)\nseguridad.test.js (8)\npreparar.js"];
+    PK [shape=folder, style=filled, fillcolor="#F3F7FB", label="package.json · .env.example"];
+  }
+  SQL [shape=folder, style=filled, fillcolor="#FFF4E0", label="database/schema.sql"];
+  DK [shape=folder, style=filled, fillcolor="#F3F7FB", label="Dockerfile · README.md"];
+}
+J -> RT [label="fetch /api/..."];
+RT -> MW; RT -> SV; RT -> CORE; SV -> CORE;
+OPS -> SQL [label="crea / migra"];
+T -> CORE [label="levanta app.js\nen puerto libre"];
+DK -> CORE [label="imagen node:22"];
+}

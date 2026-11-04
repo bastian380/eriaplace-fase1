@@ -1,0 +1,32 @@
+digraph G {
+graph [fontname="DejaVu Sans", fontsize=16, label=<<B>Diagrama de componentes · FeriaPlace v1.0</B>>, labelloc=t, rankdir=TB, bgcolor=white, pad=0.3, nodesep=0.5, ranksep=0.8 , compound=true];
+node [fontname="DejaVu Sans", fontsize=11, color="#1F4E79"];
+edge [fontname="DejaVu Sans", fontsize=10, color="#444444"];
+
+subgraph cluster_fe { label=<<B>Frontend (navegador) · public/</B>>; style=rounded; color="#1F4E79";
+  UI [shape=component, style=filled, fillcolor="#F3F7FB", label="Páginas HTML (13)\nindex, login, registro, solicitar,\nmis-solicitudes, avisos, credencial,\nverificar, admin, admin-ferias,\nadmin-usuarios, cuenta, mapa"];
+  PLANO [shape=component, style=filled, fillcolor="#F3F7FB", label="plano.js · admin-ferias.js\n(croquis editable)"];
+  MAPA [shape=component, style=filled, fillcolor="#F3F7FB", label="mapa-santiago.js + Leaflet\n(comunas y perímetros)"];
+  CAL [shape=component, style=filled, fillcolor="#F3F7FB", label="calendario.js"];
+  APIJS [shape=component, style=filled, fillcolor="#F3F7FB", label="api.js\n(cliente REST + token)"];
+}
+subgraph cluster_be { label=<<B>Backend · Node.js 22 + Express 4 · backend/src/</B>>; style=rounded; color="#1F4E79";
+  APP [shape=component, style=filled, fillcolor="#F3F7FB", label="app.js\n(enrutador Express)"];
+  SEG [shape=component, style=filled, fillcolor="#F3F7FB", label="Seguridad\nmiddleware/auth.js\n(verificarToken, requireRol)\nlimite-intentos.js"];
+  subgraph cluster_rt { label="routes/ · API REST /api"; style=dashed;
+    RT [shape=component, style=filled, fillcolor="#F3F7FB", label="auth · usuarios · ferias · puestos\nsolicitudes · reportes\ncredenciales · notificaciones"];
+  }
+  SRV [shape=component, style=filled, fillcolor="#F3F7FB", label="Servicios de dominio\nplano.js · elementos.js · comunas.js\ncredencial.js · notificar.js"];
+  DB [shape=component, style=filled, fillcolor="#F3F7FB", label="db.js\n(pool mysql2)"];
+}
+MYSQL [shape=cylinder, style=filled, fillcolor="#FFF4E0", label="MySQL 8\nbase feriaplace"];
+OSM [shape=box, style="rounded,dashed", label="OpenStreetMap\n(teselas del mapa)"];
+SMTP [shape=box, style="rounded,dashed", label="Servidor SMTP\n(opcional)"];
+UI -> APIJS; PLANO -> APIJS; MAPA -> APIJS; CAL -> APIJS;
+MAPA -> OSM [style=dashed, label="HTTPS"];
+APIJS -> APP [label="HTTP + JSON\nBearer JWT"];
+APP -> SEG -> RT;
+RT -> SRV; RT -> DB; SRV -> DB;
+SRV -> SMTP [style=dashed, label="nodemailer"];
+DB -> MYSQL [label="SQL y\ntransacciones"];
+}

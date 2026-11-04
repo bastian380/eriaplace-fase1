@@ -154,6 +154,8 @@
         });
         Object.assign(s, actualizada);
         pintarPagos();
+        // El reporte de ocupación también muestra lo cobrado y por cobrar: se vuelve a pedir para que no quede en $0
+        await cargarOcupacion();
         mensajePagos.innerHTML = '<div class="mensaje exito">Pago actualizado.</div>';
       } catch (err) {
         mensajePagos.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;

@@ -74,9 +74,12 @@ No cambia la base de datos: no hay que migrar, solo reiniciar el servidor (`npm 
 
 ### Pruebas automáticas (`npm test`)
 
-Son 13 pruebas del caso de uso completo: registro, aprobación de la cuenta, feria con puestos, perímetro, avisos, credencial QR,
+Son 13 pruebas del caso de uso completo (`test/flujo.test.js`): registro, aprobación de la cuenta, feria con puestos, perímetro, avisos, credencial QR,
 solicitud, asignación (y que un puesto no se asigne dos veces), pago, reporte de ocupación, CSV,
-límite de intentos y cambio de contraseña. Usan una base aparte, `feriaplace_test`, que borran y
+límite de intentos y cambio de contraseña. Además, desde el 03-11-2026, `test/seguridad.test.js` agrega 8 pruebas
+de concurrencia y rechazo: dos asignaciones simultáneas del mismo puesto (solo una gana), la espera que produce
+el bloqueo de fila, y los rechazos 401 (sin sesión), 403 (rol incorrecto o cuenta pendiente) y 409 (puesto ocupado).
+En total son 21 pruebas. Usan una base aparte, `feriaplace_test`, que borran y
 vuelven a crear en cada corrida; **la base real `feriaplace` no se toca**.
 
 Una sola vez, crea esa base (te pedirá la clave de `root` de MySQL):
@@ -248,6 +251,8 @@ Credenciales de prueba creadas:
 - **Administrador**: `admin@feriaplace.cl` / `Admin123!`
 - **Comerciante de prueba**: `juan@ejemplo.cl` / `123456` (ya tiene una solicitud
   confirmada con el puesto A1)
+- **Comerciante de prueba**: `maria@ejemplo.cl` / `MariaLopez2026` (María López, de la
+  Ficha de Avance 02; tiene una solicitud pendiente de frutas y verduras)
 
 Las credenciales reales de la base de datos están en `backend/.env` (no se sube a git).
 
