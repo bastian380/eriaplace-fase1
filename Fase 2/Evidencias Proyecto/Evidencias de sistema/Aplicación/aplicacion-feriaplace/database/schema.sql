@@ -10,18 +10,25 @@ CREATE TABLE IF NOT EXISTS usuario (
   email VARCHAR(150) NOT NULL UNIQUE,
   telefono VARCHAR(30) NULL,
   password_hash VARCHAR(255) NOT NULL,
-  rol ENUM('comerciante', 'administrador') NOT NULL DEFAULT 'comerciante',
-  -- Las cuentas nuevas de comerciante quedan 'pendiente' hasta que el administrador las aprueba
+  -- administrador = dueño de la plataforma FeriaPlace; admin_feria = Administrador de Feria (cliente de la plataforma);
+  -- comerciante = quien arrienda un puesto
+  rol ENUM('comerciante', 'administrador', 'admin_feria') NOT NULL DEFAULT 'comerciante',
+  -- Las cuentas nuevas (comerciantes y administradores de feria) quedan 'pendiente' hasta que el administrador las aprueba
   estado ENUM('pendiente', 'aprobado', 'rechazado') NOT NULL DEFAULT 'aprobado',
   motivo_registro VARCHAR(500) NULL,     -- lo que la persona cuenta al registrarse (qué quiere vender, por qué)
+  organizacion VARCHAR(150) NULL,        -- solo Administrador de Feria: organización o feria que representa
   comentario_admin VARCHAR(500) NULL,    -- motivo del rechazo, si lo hay
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  revisado_en DATETIME NULL
+  revisado_en DATETIME NULL,
+  avisar_correo TINYINT(1) NOT NULL DEFAULT 1,
+  avisar_whatsapp TINYINT(1) NOT NULL DEFAULT 0
 );
 
--- Ferias creadas por el administrador. Cada una tiene su propio plano (una grilla de ancho x alto celdas)
+-- Ferias. Cada una tiene su propio plano (una grilla de ancho x alto celdas).
+-- Si admin_feria_id tiene valor, la feria es de ese Administrador de Feria; si es NULL, la gestiona la plataforma.
 CREATE TABLE IF NOT EXISTS feria (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  admin_feria_id INT NULL,
   nombre VARCHAR(150) NOT NULL,
   lugar VARCHAR(200) NULL,
   comuna VARCHAR(60) NULL,          -- comuna de la Región Metropolitana (ver public/datos/comunas-rm.geojson)
@@ -38,7 +45,8 @@ CREATE TABLE IF NOT EXISTS feria (
   publicada TINYINT(1) NOT NULL DEFAULT 1,
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_feria_comuna (comuna),
-  INDEX idx_feria_fechas (fecha_inicio, fecha_cierre)
+  INDEX idx_feria_fechas (fecha_inicio, fecha_cierre),
+  CONSTRAINT fk_feria_admin FOREIGN KEY (admin_feria_id) REFERENCES usuario(id) ON DELETE SET NULL
 );
 
 -- Puestos dibujados en el plano de una feria (pos_x, pos_y, ancho y alto se miden en celdas de la grilla)
@@ -92,6 +100,7 @@ CREATE TABLE IF NOT EXISTS solicitud (
   comentario_admin VARCHAR(500) NULL,
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   resuelto_en DATETIME NULL,
+  ultimo_recordatorio DATETIME NULL, -- último recordatorio de pago enviado
   CONSTRAINT fk_solicitud_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id),
   CONSTRAINT fk_solicitud_puesto FOREIGN KEY (puesto_id) REFERENCES puesto(id),
   CONSTRAINT fk_solicitud_feria FOREIGN KEY (feria_id) REFERENCES feria(id),
@@ -111,4 +120,100 @@ CREATE TABLE IF NOT EXISTS notificacion (
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_notificacion_usuario (usuario_id, leida),
   CONSTRAINT fk_notificacion_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
+);
+
+-- Cada envío de un aviso por correo o WhatsApp. 'simulado' = no salió de la app (sin SMTP, o WhatsApp en modo prueba).
+CREATE TABLE IF NOT EXISTS envio_aviso (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  notificacion_id INT NOT NULL,
+  canal ENUM('correo', 'whatsapp') NOT NULL,
+  destino VARCHAR(150) NOT NULL,
+  estado ENUM('simulado', 'enviado', 'fallido') NOT NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_envio_notificacion FOREIGN KEY (notificacion_id) REFERENCES notificacion(id) ON DELETE CASCADE
+);
+
+-- Lista de espera de una feria llena. Al liberarse un puesto se ofrece al primero por 48 horas (estado 'ofrecido').
+CREATE TABLE IF NOT EXISTS lista_espera (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  feria_id INT NOT NULL,
+  usuario_id INT NOT NULL,
+  rubro VARCHAR(120) NOT NULL,
+  comentario VARCHAR(500) NULL,
+  estado ENUM('esperando', 'ofrecido', 'aceptado', 'vencido', 'cancelado') NOT NULL DEFAULT 'esperando',
+  puesto_id INT NULL,                -- puesto ofrecido
+  oferta_vence DATETIME NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_espera_feria (feria_id, estado),
+  CONSTRAINT fk_espera_feria FOREIGN KEY (feria_id) REFERENCES feria(id) ON DELETE CASCADE,
+  CONSTRAINT fk_espera_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id),
+  CONSTRAINT fk_espera_puesto FOREIGN KEY (puesto_id) REFERENCES puesto(id) ON DELETE SET NULL
+);
+
+-- Calificaciones del comerciante que atiende un puesto (su solicitud confirmada). Una por persona.
+CREATE TABLE IF NOT EXISTS resena (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  solicitud_id INT NOT NULL,
+  usuario_id INT NOT NULL,           -- quien califica
+  estrellas TINYINT NOT NULL,
+  comentario VARCHAR(500) NULL,
+  oculta TINYINT(1) NOT NULL DEFAULT 0,  -- la oculta quien gestiona la feria si es ofensiva
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_resena_persona UNIQUE (solicitud_id, usuario_id),
+  CONSTRAINT fk_resena_solicitud FOREIGN KEY (solicitud_id) REFERENCES solicitud(id) ON DELETE CASCADE,
+  CONSTRAINT fk_resena_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id) ON DELETE CASCADE
+);
+
+-- Asistencia diaria de cada puesto asignado, registrada al escanear la credencial QR o a mano.
+CREATE TABLE IF NOT EXISTS asistencia (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  solicitud_id INT NOT NULL,
+  fecha DATE NOT NULL,
+  metodo ENUM('qr', 'manual') NOT NULL,
+  registrado_por INT NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_asistencia_dia UNIQUE (solicitud_id, fecha),
+  CONSTRAINT fk_asistencia_solicitud FOREIGN KEY (solicitud_id) REFERENCES solicitud(id) ON DELETE CASCADE,
+  CONSTRAINT fk_asistencia_usuario FOREIGN KEY (registrado_por) REFERENCES usuario(id) ON DELETE SET NULL
+);
+
+-- Cobros de la plataforma al Administrador de Feria por publicar los puestos de su feria.
+-- monto = puestos x tarifa vigente al pedir la publicación. El administrador de la plataforma marca el pago
+-- (no hay pasarela: se paga por transferencia) y entonces la feria se publica.
+CREATE TABLE IF NOT EXISTS cobro_publicacion (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  feria_id INT NOT NULL,
+  admin_feria_id INT NOT NULL,
+  puestos INT NOT NULL,              -- cuántos puestos cubre este cobro
+  tarifa INT NOT NULL,               -- precio por puesto que se usó para calcular el monto
+  monto INT NOT NULL,
+  estado ENUM('pendiente', 'pagado') NOT NULL DEFAULT 'pendiente',
+  comentario VARCHAR(300) NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  pagado_en DATETIME NULL,
+  INDEX idx_cobro_feria (feria_id, estado),
+  CONSTRAINT fk_cobro_feria FOREIGN KEY (feria_id) REFERENCES feria(id) ON DELETE CASCADE,
+  CONSTRAINT fk_cobro_admin FOREIGN KEY (admin_feria_id) REFERENCES usuario(id)
+);
+
+-- Pagos en línea (modo prueba). tipo = 'puesto': referencia_id es la solicitud; tipo = 'publicacion': es el cobro_publicacion.
+CREATE TABLE IF NOT EXISTS pago_linea (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  token CHAR(48) NOT NULL UNIQUE,
+  tipo ENUM('puesto', 'publicacion') NOT NULL,
+  referencia_id INT NOT NULL,
+  usuario_id INT NOT NULL,           -- quien paga
+  monto INT NOT NULL,
+  estado ENUM('iniciado', 'aprobado', 'rechazado', 'anulado') NOT NULL DEFAULT 'iniciado',
+  codigo_autorizacion VARCHAR(20) NULL,
+  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resuelto_en DATETIME NULL,
+  INDEX idx_pago_referencia (tipo, referencia_id, estado),
+  CONSTRAINT fk_pago_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id)
+);
+
+-- Valores que el administrador de la plataforma puede cambiar desde la app (por ahora, la tarifa por puesto)
+CREATE TABLE IF NOT EXISTS configuracion (
+  clave VARCHAR(50) PRIMARY KEY,
+  valor VARCHAR(200) NOT NULL
 );

@@ -12,6 +12,12 @@ const usuariosRoutes = require('./routes/usuarios');
 const reportesRoutes = require('./routes/reportes');
 const credencialesRoutes = require('./routes/credenciales');
 const notificacionesRoutes = require('./routes/notificaciones');
+const cobrosRoutes = require('./routes/cobros');
+const pagosRoutes = require('./routes/pagos');
+const listaEsperaRoutes = require('./routes/listaEspera');
+const buscarRoutes = require('./routes/buscar');
+const resenasRoutes = require('./routes/resenas');
+const asistenciaRoutes = require('./routes/asistencia');
 
 const app = express();
 
@@ -28,6 +34,12 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/reportes', reportesRoutes);
 app.use('/api/credenciales', credencialesRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
+app.use('/api/cobros', cobrosRoutes);
+app.use('/api/pagos', pagosRoutes);
+app.use('/api/lista-espera', listaEsperaRoutes);
+app.use('/api/buscar', buscarRoutes);
+app.use('/api/resenas', resenasRoutes);
+app.use('/api/asistencia', asistenciaRoutes);
 
 app.use(express.static(path.join(__dirname, '..', '..', 'public')));
 

@@ -1,5 +1,5 @@
 (async () => {
-  const sesion = requerirSesion(['administrador']);
+  const sesion = requerirSesion(ROLES_GESTION);
   if (!sesion) return;
 
   const mensaje = document.getElementById('mensaje');
@@ -63,6 +63,7 @@
     confirmadas = todas.filter((s) => s.estado === 'confirmada');
     pintarPagos();
     cargarOcupacion();
+    cargarEspera();
 
     document.querySelectorAll('.btn-asignar').forEach((boton) => {
       boton.addEventListener('click', async () => {
@@ -127,7 +128,8 @@
     }
     tablaPagos.innerHTML = lista.map((s) => {
       const pagado = s.estado_pago === 'pagado';
-      const fecha = pagado && s.pagado_en ? `<br><small>${new Date(s.pagado_en).toLocaleDateString('es-CL')}</small>` : '';
+      const fecha = (pagado && s.pagado_en ? `<br><small>${new Date(s.pagado_en).toLocaleDateString('es-CL')}</small>` : '')
+        + (pagado && s.pago_autorizacion ? `<br><small>En línea · código ${esc(s.pago_autorizacion)}</small>` : '');
       return `
         <tr data-id="${s.id}">
           <td>${esc(s.comerciante_nombre)}<br><small>${esc(s.comerciante_email)}</small></td>
@@ -139,6 +141,7 @@
             <button class="btn-pago sin-margen ${pagado ? 'secundario' : ''}" data-estado="${pagado ? 'pendiente' : 'pagado'}">
               ${pagado ? 'Marcar pendiente' : 'Marcar pagado'}</button>
             <button class="btn-monto secundario sin-margen">Guardar monto</button>
+            ${pagado ? '' : '<button class="btn-liberar peligro sin-margen">Liberar puesto</button>'}
           </td>
         </tr>`;
     }).join('');
@@ -164,6 +167,22 @@
     tablaPagos.querySelectorAll('.btn-pago').forEach((boton) => {
       boton.addEventListener('click', () => guardarPago(boton.closest('tr'), boton.dataset.estado));
     });
+    tablaPagos.querySelectorAll('.btn-liberar').forEach((boton) => {
+      boton.addEventListener('click', async () => {
+        const motivo = prompt('¿Liberar este puesto? Escribe el motivo para el comerciante:');
+        if (motivo === null) return;
+        mensajePagos.innerHTML = '';
+        try {
+          const r = await apiFetch(`/solicitudes/${boton.closest('tr').dataset.id}/liberar`, {
+            method: 'PUT', body: JSON.stringify({ comentario_admin: motivo }),
+          });
+          await cargarTodo();
+          mensajePagos.innerHTML = `<div class="mensaje exito">Puesto liberado.${r.ofrecido_a_lista ? ' Se le ofreció al primero de la lista de espera.' : ''}</div>`;
+        } catch (err) {
+          mensajePagos.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
+        }
+      });
+    });
     tablaPagos.querySelectorAll('.btn-monto').forEach((boton) => {
       boton.addEventListener('click', () => {
         const fila = boton.closest('tr');
@@ -173,6 +192,40 @@
     });
   }
   filtroFeria.addEventListener('change', pintarPagos);
+
+  document.getElementById('btn-recordatorios').addEventListener('click', async () => {
+    mensajePagos.innerHTML = '';
+    try {
+      const { enviados } = await apiFetch('/notificaciones/recordatorios', { method: 'POST', body: '{}' });
+      mensajePagos.innerHTML = `<div class="mensaje exito">${enviados === 0
+        ? 'No hay a quién recordarle: cada comerciante recibe como máximo un recordatorio cada 3 días.'
+        : `Se enviaron ${enviados} ${enviados === 1 ? 'recordatorio' : 'recordatorios'}.`}</div>`;
+    } catch (err) {
+      mensajePagos.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
+    }
+  });
+
+  // ---------- Lista de espera ----------
+  async function cargarEspera() {
+    const tabla = document.getElementById('tabla-espera');
+    try {
+      const filas = await apiFetch('/lista-espera');
+      tabla.innerHTML = filas.length === 0
+        ? '<tr><td colspan="5">No hay nadie en lista de espera.</td></tr>'
+        : filas.map((e) => `
+          <tr>
+            <td>${e.posicion ?? '-'}</td>
+            <td>${esc(e.comerciante_nombre)}<br><small>${esc(e.comerciante_email)}</small></td>
+            <td>${esc(e.feria_nombre)}</td>
+            <td>${esc(e.rubro)}</td>
+            <td>${e.estado === 'ofrecido'
+    ? `<span class="badge pendiente">puesto ${esc(e.puesto_codigo)} ofrecido</span><br><small>Vence ${new Date(e.oferta_vence).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</small>`
+    : '<span class="badge sin-pago">esperando</span>'}</td>
+          </tr>`).join('');
+    } catch (err) {
+      tabla.innerHTML = `<tr><td colspan="5"><div class="mensaje error">${esc(err.message)}</div></td></tr>`;
+    }
+  }
 
   // ---------- Reporte de ocupación ----------
   async function cargarOcupacion() {
@@ -191,7 +244,7 @@
         ? '<tr><td colspan="9">Todavía no hay ferias creadas.</td></tr>'
         : ferias.map((f) => `
           <tr>
-            <td>${esc(f.nombre)}${f.publicada ? '' : ' <small>(borrador)</small>'}<br><small>${esc(f.comuna || '')}</small></td>
+            <td>${esc(f.nombre)}${f.publicada ? '' : ' <small>(borrador)</small>'}<br><small>${esc(f.comuna || '')}${sesion.usuario.rol === 'administrador' ? ` · ${esc(f.admin_feria_nombre || 'Plataforma')}` : ''}</small></td>
             <td>${esc(formatearRangoFechas(f.fecha_inicio, f.fecha_cierre) || '-')}</td>
             <td>${f.puestos_total}</td>
             <td>${f.puestos_ocupados}</td>
@@ -238,25 +291,30 @@
           </div>`).join('');
   }
 
-  // El CSV se pide con el token de la sesión y se descarga como archivo
-  document.getElementById('btn-csv').addEventListener('click', async () => {
-    const aviso = document.getElementById('mensaje-ocupacion');
-    aviso.innerHTML = '';
-    try {
-      const respuesta = await fetch(`${API_BASE}/reportes/ocupacion.csv`, {
-        headers: { Authorization: `Bearer ${obtenerSesion().token}` },
-      });
-      if (!respuesta.ok) throw new Error('No se pudo generar el archivo');
-      const url = URL.createObjectURL(await respuesta.blob());
-      const enlace = document.createElement('a');
-      enlace.href = url;
-      enlace.download = 'reporte-ocupacion.csv';
-      enlace.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      aviso.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
-    }
-  });
+  // Los reportes se piden con el token de la sesión y se descargan como archivo
+  function botonDescarga(id, ruta, nombre) {
+    document.getElementById(id).addEventListener('click', async () => {
+      const aviso = document.getElementById('mensaje-ocupacion');
+      aviso.innerHTML = '';
+      try {
+        const respuesta = await fetch(`${API_BASE}/reportes/${ruta}`, {
+          headers: { Authorization: `Bearer ${obtenerSesion().token}` },
+        });
+        if (!respuesta.ok) throw new Error('No se pudo generar el archivo');
+        const url = URL.createObjectURL(await respuesta.blob());
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = nombre;
+        enlace.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        aviso.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
+      }
+    });
+  }
+  botonDescarga('btn-csv', 'ocupacion.csv', 'reporte-ocupacion.csv');
+  botonDescarga('btn-excel', 'completo.xlsx', 'reporte-feriaplace.xlsx');
+  botonDescarga('btn-pdf', 'completo.pdf', 'reporte-feriaplace.pdf');
 
   // Aviso si el administrador sigue usando la contraseña de ejemplo del README
   if (sesion.clave_de_ejemplo) {
@@ -264,8 +322,15 @@
       del proyecto. <a href="cuenta.html">Cámbiala aquí</a> antes de publicar la aplicación.</div>`;
   }
 
-  // Aviso de cuentas nuevas esperando aprobación
-  apiFetch('/usuarios?estado=pendiente').then((pendientes) => {
+  // El Administrador de Feria ve solo sus ferias; se lo recordamos arriba
+  if (sesion.usuario.rol === 'admin_feria') {
+    document.getElementById('aviso-cuentas').innerHTML = `<div class="mensaje">Aquí ves las solicitudes, los pagos y la
+      ocupación de tus ferias. Para publicar una feria nueva, créala en <a href="admin-ferias.html">Mis ferias</a> y paga
+      su publicación en <a href="cobros.html">Pagos a la plataforma</a>.</div>`;
+  }
+
+  // Aviso de cuentas nuevas esperando aprobación (solo la plataforma aprueba cuentas)
+  if (sesion.usuario.rol === 'administrador') apiFetch('/usuarios?estado=pendiente').then((pendientes) => {
     if (pendientes.length > 0) {
       document.getElementById('aviso-cuentas').innerHTML = `<div class="mensaje">Hay ${pendientes.length}
         ${pendientes.length === 1 ? 'cuenta nueva esperando' : 'cuentas nuevas esperando'} tu aprobación.

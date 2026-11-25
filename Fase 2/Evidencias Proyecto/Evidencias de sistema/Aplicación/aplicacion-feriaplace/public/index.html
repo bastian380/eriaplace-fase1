@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -12,34 +14,30 @@
   <a href="index.html">FeriaPlace</a>
   <nav id="nav-sesion"></nav>
 </header>
-<main class="ancho">
-  <div class="tarjeta">
+<section class="hero">
+  <div class="hero-in">
     <h1>Encuentra tu puesto en la feria</h1>
-    <p>Elige una feria, revisa su plano y mira qué puestos están disponibles. Si te interesa uno, envía tu solicitud y el administrador te confirmará el espacio.</p>
+    <p>Busca lo que necesitas o revisa el plano de cada feria y solicita tu puesto en minutos.</p>
+    <form id="form-buscar" class="buscador">
+      <input type="search" id="buscar-texto" placeholder="Ej: verduras, artesanía, ropa..." minlength="2" maxlength="60" required aria-label="Producto o rubro">
+      <select id="buscar-cuando" aria-label="Cuándo">
+        <option value="">Cualquier día</option>
+        <option value="hoy">Hoy</option>
+        <option value="sabado">Este sábado</option>
+        <option value="domingo">Este domingo</option>
+        <option value="fecha">Elegir fecha</option>
+      </select>
+      <input type="date" id="buscar-fecha" class="oculto" aria-label="Fecha">
+      <button type="submit" class="sin-margen">Buscar</button>
+    </form>
+    <p class="hero-org">¿Organizas una feria navideña o de temporada? <a href="registro.html?tipo=admin_feria">Regístrate como Administrador de Feria</a> y publica tus puestos en FeriaPlace.</p>
   </div>
+</section>
+<main class="ancho">
+  <div id="resultados-busqueda" class="tarjeta"></div>
 
   <div class="tarjeta">
-    <h2>Calendario de ferias de temporada</h2>
-    <p class="texto-suave">Cada feria aparece en los días en que está abierta. Tócala para ver su plano y sus puestos.</p>
-    <div id="calendario"></div>
-  </div>
-
-  <div class="tarjeta">
-    <div class="titulo-plano">
-      <h2>Mapa de Santiago</h2>
-      <div class="leyenda">
-        <span><span class="punto comuna-con-ferias"></span>Comuna con ferias</span>
-        <span><span class="punto comuna-sin-ferias"></span>Sin ferias todavía</span>
-        <span><span class="punto terreno-feria"></span>Terreno de la feria</span>
-      </div>
-    </div>
-    <p class="texto-suave">El contorno naranjo es el terreno de cada feria. Tócalo para ver sus datos, o toca una comuna para ver sus ferias.</p>
-    <div id="mapa-santiago" class="mapa-santiago"></div>
-    <div id="detalle-comuna" class="detalle-puesto oculto"></div>
-  </div>
-
-  <div class="tarjeta">
-    <h2>Ferias</h2>
+    <h2>Ferias disponibles</h2>
     <div id="lista-ferias" class="lista-ferias"><p>Cargando ferias...</p></div>
   </div>
 
@@ -61,12 +59,33 @@
       <p class="texto-suave">Toca un puesto del plano para ver sus datos.</p>
     </div>
   </div>
+
+  <div class="tarjeta">
+    <div class="titulo-plano">
+      <h2>Mapa de Santiago</h2>
+      <div class="leyenda">
+        <span><span class="punto comuna-con-ferias"></span>Comuna con ferias</span>
+        <span><span class="punto comuna-sin-ferias"></span>Sin ferias todavía</span>
+        <span><span class="punto terreno-feria"></span>Terreno de la feria</span>
+      </div>
+    </div>
+    <p class="texto-suave">El contorno naranjo es el terreno de cada feria. Tócalo para ver sus datos, o toca una comuna para ver sus ferias.</p>
+    <div id="mapa-santiago" class="mapa-santiago"></div>
+    <div id="detalle-comuna" class="detalle-puesto oculto"></div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Calendario de ferias de temporada</h2>
+    <p class="texto-suave">Cada feria aparece en los días en que está abierta. Tócala para ver su plano y sus puestos.</p>
+    <div id="calendario"></div>
+  </div>
 </main>
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="js/api.js"></script>
 <script src="js/mapa-santiago.js"></script>
 <script src="js/plano.js"></script>
 <script src="js/calendario.js"></script>
+<script src="js/buscador.js"></script>
 <script src="js/inicio.js"></script>
 </body>
 </html>

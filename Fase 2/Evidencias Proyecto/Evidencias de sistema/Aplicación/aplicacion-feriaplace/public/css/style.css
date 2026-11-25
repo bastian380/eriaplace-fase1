@@ -1,5 +1,22 @@
 * { box-sizing: border-box; }
 
+/* Buscador público y calificaciones */
+.buscador { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.buscador input[type="search"] { flex: 2 1 220px; width: auto; margin: 0; }
+.buscador select, .buscador input[type="date"] { flex: 1 1 140px; width: auto; margin: 0; }
+.resultado-feria { border-top: 1px solid #e5e7eb; padding: 10px 0; }
+.resultado-feria .texto-suave { display: block; }
+.resultado-feria ul { margin: 6px 0 0; padding-left: 18px; }
+.estrellas { color: #b45309; white-space: nowrap; }
+.resena { border-top: 1px solid #e5e7eb; padding: 8px 0; }
+.resena p { margin: 4px 0 0; }
+.resena.oculta-admin { opacity: 0.55; }
+.form-resena { margin-top: 10px; }
+
+/* Asistencia con QR */
+.caja-camara { margin-top: 12px; max-width: 420px; }
+.caja-camara video { width: 100%; border-radius: 8px; display: block; background: #111827; }
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
@@ -320,6 +337,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   font-size: 0.9rem;
 }
 .herramientas label { display: flex; align-items: center; gap: 6px; margin: 0; }
+.plantillas-plano #t-descripcion { flex: 1 1 260px; margin: 0; }
 .herramientas input, .herramientas select { width: auto; padding: 6px 8px; }
 
 .form-columnas {
@@ -539,3 +557,117 @@ nav .contador { display: inline-block; min-width: 18px; padding: 0 5px; margin-l
 .verificacion-detalle { list-style: none; padding: 0; margin: 0 0 16px; }
 .verificacion-detalle li { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid #e5e7eb; }
 .verificacion-detalle li > span:first-child { width: 90px; flex-shrink: 0; color: #6b7280; }
+
+/* ---------- Identidad visual (verde principal, noviembre 2026) ---------- */
+:root {
+  --verde: #1f6f4f;
+  --verde-osc: #17593e;
+  --verde-50: #eef6f1;
+  --verde-100: #d5e8dd;
+  --verde-borde: #a9cfba;
+  --fondo: #f6f5f0;
+  --tinta: #1c2b24;
+  --suave: #5d6b64;
+  --borde: #e3e4dc;
+  --acento: #d97706;
+}
+body { background: var(--fondo); color: var(--tinta); line-height: 1.5; }
+button, input, select, textarea { font-family: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--verde); outline-offset: 1px; }
+
+/* Encabezado con logo */
+header { padding: 12px 24px; }
+header > a:first-child { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; display: inline-flex; align-items: center; gap: 8px; }
+header > a:first-child::before { content: ""; width: 26px; height: 26px; flex: none; background: url("../img/logo-blanco.svg") center / contain no-repeat; }
+nav a { display: inline-block; padding: 8px 10px; margin-left: 4px; border-radius: 8px; font-weight: 500; }
+nav a:hover { background: rgba(255, 255, 255, 0.14); text-decoration: none; }
+
+/* Portada del inicio, con borde de toldo */
+.hero { background: var(--verde); color: #fff; position: relative; padding: 28px 16px 44px; }
+.hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 13px;
+  background: radial-gradient(circle at 13px 0, var(--verde) 13px, transparent 13.5px) 0 0 / 26px 13px repeat-x;
+}
+.hero-in { max-width: 1118px; margin: 0 auto; }
+.hero h1 { font-size: 2.5rem; line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 10px; }
+.hero p { margin: 0 0 20px; max-width: 42em; color: #dcefe4; font-size: 1.05rem; }
+.hero .buscador { background: #fff; padding: 8px; border-radius: 14px; box-shadow: 0 10px 28px rgba(10, 50, 35, 0.28); }
+.hero .buscador input, .hero .buscador select { border: 0; background: var(--verde-50); border-radius: 9px; padding: 12px; }
+.hero .buscador button { padding: 12px 26px; border-radius: 9px; font-weight: 700; }
+.hero .hero-org { margin: 16px 0 0; font-size: 0.92rem; }
+.hero .hero-org a { color: #fff; font-weight: 600; }
+.hero + main { margin-top: 40px; }
+#resultados-busqueda:empty { display: none; }
+
+/* Tarjetas, texto y enlaces */
+.tarjeta { border-radius: 14px; box-shadow: none; border: 1px solid var(--borde); }
+.tarjeta h1:first-child, .tarjeta h2:first-child, .titulo-plano h2 { margin-top: 0; }
+.tarjeta h2 { font-size: 1.35rem; letter-spacing: -0.01em; margin-bottom: 6px; }
+.texto-suave, .leyenda { color: var(--suave); }
+main p a:not(.boton), main li a:not(.boton), main td a:not(.boton), .resultado-feria a { color: var(--verde); font-weight: 600; }
+th { background: var(--verde-50); color: var(--verde-osc); }
+th, td { border-bottom-color: var(--borde); }
+
+/* Botones */
+button, a.boton { border-radius: 8px; font-weight: 600; }
+button.secundario { background: #fff; color: var(--verde); box-shadow: inset 0 0 0 1px var(--verde-borde); }
+button.secundario:hover { background: var(--verde-50); }
+#form-login button[type="submit"], #form-registro button[type="submit"] { width: 100%; padding: 12px; font-weight: 700; }
+
+/* Lista de ferias */
+.feria-item { background: #fff; border: 1px solid var(--borde); padding: 16px; gap: 6px; border-radius: 12px; }
+.feria-item:hover { background: var(--verde-50); border-color: var(--verde-borde); }
+.feria-item.activa { background: var(--verde-50); border: 2px solid var(--verde); }
+.barra-disp { display: block; height: 7px; border-radius: 9px; background: var(--verde-100); overflow: hidden; margin-top: 4px; }
+.barra-disp i { display: block; height: 100%; background: var(--verde); }
+
+/* Plano: lo verde es lo que se puede arrendar */
+.plano-marco { border-color: var(--borde); background: #fbfaf6; border-radius: 12px; }
+.plano-puesto { border-radius: 8px; }
+.plano-puesto.ocupado:not(.editable), .puesto-celda.ocupado { background: #e4e7e3; color: #566159; }
+.punto.ocupado { background: #cfd4cf; }
+.ayuda-scroll { font-size: 0.82rem; color: var(--suave); margin: 8px 0 0; text-align: right; }
+
+/* Calendario, mapa y detalles */
+.cal-grilla, .cal-encabezado, .cal-dia { border-color: var(--borde); }
+.cal-encabezado { background: var(--verde-50); color: var(--verde-osc); }
+.cal-dia.fuera { background: #fbfaf6; }
+.estado-vacio { border: 0; background: var(--verde-50); color: var(--verde-osc); }
+.detalle-puesto, .panel-puesto { background: var(--verde-50); border-radius: 10px; }
+.mapa-santiago { border-color: var(--borde); border-radius: 12px; }
+
+/* Pie de página */
+footer.pie { background: #143d2d; }
+.pie-legal { border-top-color: #2b5a47; color: #a9c7b8; }
+
+/* Celular */
+@media (max-width: 640px) {
+  header { padding: 10px 16px; gap: 2px; }
+  nav { display: flex; flex-wrap: nowrap; overflow-x: auto; width: calc(100vw - 32px); scrollbar-width: none; }
+  nav a { margin: 0 2px 0 0; white-space: nowrap; padding: 10px 12px 10px 0; flex: none; }
+  .hero { padding: 16px 16px 30px; }
+  .hero h1 { font-size: 1.95rem; }
+  .hero p { font-size: 1rem; }
+  .hero .buscador input[type="search"] { flex-basis: 100%; }
+  .hero .buscador button { flex: 1 1 100px; }
+  .tarjeta { padding: 18px; }
+  .acciones-fila { flex-wrap: wrap; }
+  .acciones-fila > label { flex: 1 1 100%; }
+  button:not(.plano-puesto):not(.cal-feria), a.boton { min-height: 44px; }
+  button.boton-chico:not(.plano-puesto) { min-height: 36px; }
+  .cal-grilla { min-width: 0; }
+  .cal-dia { min-height: 46px; padding: 3px; }
+  .cal-encabezado { font-size: 0.72rem; }
+  button.cal-feria { min-height: 18px; font-size: 0; }
+  .cal-barra button.boton-chico { min-width: 44px; min-height: 40px; }
+}
+
+@media print {
+  body { background: #fff; }
+}

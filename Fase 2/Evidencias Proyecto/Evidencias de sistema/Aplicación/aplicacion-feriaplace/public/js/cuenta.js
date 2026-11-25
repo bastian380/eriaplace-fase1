@@ -24,4 +24,30 @@
       mensaje.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
     }
   });
+
+  // Preferencias de avisos
+  const $ = (id) => document.getElementById(id);
+  const mostrarAvisos = (tipo, texto) => { $('mensaje-avisos').innerHTML = `<div class="mensaje ${tipo}">${esc(texto)}</div>`; };
+  apiFetch('/notificaciones/preferencias').then((p) => {
+    $('avisar-correo').checked = p.avisar_correo;
+    $('avisar-whatsapp').checked = p.avisar_whatsapp;
+    $('telefono').value = p.telefono;
+  }).catch((err) => mostrarAvisos('error', err.message));
+
+  $('form-avisos').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await apiFetch('/notificaciones/preferencias', {
+        method: 'PUT',
+        body: JSON.stringify({
+          avisar_correo: $('avisar-correo').checked,
+          avisar_whatsapp: $('avisar-whatsapp').checked,
+          telefono: $('telefono').value,
+        }),
+      });
+      mostrarAvisos('exito', 'Preferencias guardadas.');
+    } catch (err) {
+      mostrarAvisos('error', err.message);
+    }
+  });
 })();

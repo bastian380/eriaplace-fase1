@@ -110,8 +110,8 @@
 
   function pintarLista() {
     if (ferias.length === 0) {
-      listaFerias.innerHTML = sesion && sesion.usuario.rol === 'administrador'
-        ? '<p class="estado-vacio">Todavía no hay ferias. <a href="admin-ferias.html">Crea la primera en Ferias y planos</a>.</p>'
+      listaFerias.innerHTML = esGestor(sesion)
+        ? '<p class="estado-vacio">Todavía no hay ferias publicadas. <a href="admin-ferias.html">Crea o publica una en Ferias y planos</a>.</p>'
         : '<p class="estado-vacio">Todavía no hay ferias publicadas. Vuelve pronto.</p>';
       return;
     }
@@ -121,6 +121,7 @@
         <span class="texto-suave">${describirFeria(f) || '&nbsp;'}</span>
         ${f.precio_puesto !== null ? `<span class="precio">Puesto desde ${formatearPesos(f.precio_puesto)} por la temporada</span>` : ''}
         <span class="disponibles">${f.puestos_disponibles} de ${f.total_puestos} puestos disponibles</span>
+        <span class="barra-disp"><i style="width:${f.total_puestos > 0 ? (100 * f.puestos_disponibles) / f.total_puestos : 0}%"></i></span>
       </button>
     `).join('');
     listaFerias.querySelectorAll('.feria-item').forEach((boton) => {
@@ -141,13 +142,78 @@
       accion = `<a class="boton" href="${enlace}">Solicitar este puesto</a>`;
       if (!sesion) accion += '<p class="texto-suave">Necesitas iniciar sesión o <a href="registro.html">crear una cuenta</a> para solicitarlo.</p>';
     }
+    if (feriaActual.puestos_disponibles === 0 && (!sesion || sesion.usuario.rol === 'comerciante')) {
+      const destino = `solicitar.html?feria=${feriaActual.id}`;
+      accion = `<p>Esta feria está llena. <a href="${sesion ? destino : `login.html?volver=${encodeURIComponent(destino)}`}">Anótate en la lista de espera</a>.</p>`;
+    }
     detallePuesto.innerHTML = `
       <h3>Puesto ${esc(p.codigo)}</h3>
       <p>${esc(p.zona)} · ${NOMBRE_TAMANO[p.tamano] || esc(p.tamano)} ·
         <span class="badge ${p.estado}">${p.estado}</span></p>
       ${precioDe(p) !== null ? `<p class="precio">Arriendo: ${formatearPesos(precioDe(p))} por toda la temporada</p>` : ''}
       ${accion}
+      <div id="resenas-puesto"></div>
     `;
+    if (p.estado === 'ocupado') cargarResenas(p);
+  }
+
+  // ---------- Calificaciones del puesto ----------
+  async function cargarResenas(p) {
+    let datos;
+    try {
+      datos = await apiFetch(`/resenas/puesto/${p.id}`);
+    } catch (err) {
+      return;
+    }
+    const caja = document.getElementById('resenas-puesto');
+    // Si mientras tanto tocaron otro puesto, esta respuesta ya no sirve
+    if (!caja || !puestoSeleccionado || puestoSeleccionado.id !== p.id || !datos.solicitud_id) return;
+    const formulario = datos.puede_calificar ? `
+      <form id="form-resena" class="form-resena">
+        <label for="resena-estrellas">${datos.mia ? 'Cambiar mi calificación' : 'Califica este puesto'}</label>
+        <select id="resena-estrellas" required>
+          ${[5, 4, 3, 2, 1].map((n) => `<option value="${n}" ${datos.mia && datos.mia.estrellas === n ? 'selected' : ''}>${'★'.repeat(n)}${'☆'.repeat(5 - n)}</option>`).join('')}
+        </select>
+        <textarea id="resena-comentario" rows="2" maxlength="500" placeholder="Cuéntanos cómo te atendieron (opcional)">${esc(datos.mia?.comentario || '')}</textarea>
+        <button type="submit" class="sin-margen">Guardar</button>
+        <div id="mensaje-resena"></div>
+      </form>` : '';
+    const sinSesion = !sesion ? '<p class="texto-suave"><a href="login.html">Inicia sesión</a> para calificar este puesto.</p>' : '';
+    caja.innerHTML = `
+      <h4>Calificaciones ${datos.total ? `<span class="estrellas">★ ${String(datos.promedio).replace('.', ',')}</span> <small>(${datos.total})</small>` : ''}</h4>
+      <p class="texto-suave">${esc(datos.rubro)}</p>
+      ${datos.resenas.length === 0 ? '<p class="texto-suave">Todavía no tiene calificaciones.</p>' : datos.resenas.map((r) => `
+        <div class="resena ${r.oculta ? 'oculta-admin' : ''}">
+          <span class="estrellas">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</span> <strong>${esc(r.autor)}</strong>${r.oculta ? ' <small>(oculta)</small>' : ''}
+          ${r.comentario ? `<p>${esc(r.comentario)}</p>` : ''}
+          ${datos.gestiona ? `<button type="button" class="secundario boton-chico btn-ocultar" data-id="${r.id}" data-oculta="${r.oculta ? 0 : 1}" style="margin-left:0">${r.oculta ? 'Mostrar' : 'Ocultar'}</button>` : ''}
+        </div>`).join('')}
+      ${formulario}${sinSesion}`;
+    caja.querySelectorAll('.btn-ocultar').forEach((boton) => {
+      boton.addEventListener('click', async () => {
+        await apiFetch(`/resenas/${boton.dataset.id}/oculta`, { method: 'PUT', body: JSON.stringify({ oculta: boton.dataset.oculta === '1' }) }).catch(() => {});
+        cargarResenas(p);
+      });
+    });
+    const form = document.getElementById('form-resena');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await apiFetch('/resenas', {
+            method: 'POST',
+            body: JSON.stringify({
+              solicitud_id: datos.solicitud_id,
+              estrellas: Number(document.getElementById('resena-estrellas').value),
+              comentario: document.getElementById('resena-comentario').value,
+            }),
+          });
+          cargarResenas(p);
+        } catch (err) {
+          document.getElementById('mensaje-resena').innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
+        }
+      });
+    }
   }
 
   function pintarPlano() {
@@ -202,7 +268,18 @@
       document.getElementById('mapa-santiago').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   });
-  const pedida = Number(new URLSearchParams(window.location.search).get('feria'));
+  const parametros = new URLSearchParams(window.location.search);
+  const pedida = Number(parametros.get('feria'));
+  const puestoPedido = Number(parametros.get('puesto'));
   const inicial = ferias.find((f) => f.id === pedida) || ferias[0];
-  if (inicial) abrirFeria(inicial.id);
+  if (inicial) {
+    // Desde el buscador se llega directo al puesto encontrado
+    await abrirFeria(inicial.id, Boolean(puestoPedido));
+    const encontrado = feriaActual && feriaActual.puestos && feriaActual.puestos.find((p) => p.id === puestoPedido);
+    if (encontrado) {
+      puestoSeleccionado = encontrado;
+      pintarPlano();
+      pintarDetalle();
+    }
+  }
 })();

@@ -23,7 +23,7 @@ const ADMIN = { email: 'admin@prueba.cl', password: 'ClaveAdmin2026' };
 // Deja la base de pruebas vacía, con las tablas del esquema y un administrador
 async function prepararBase() {
   await pool.query('SET FOREIGN_KEY_CHECKS = 0');
-  for (const tabla of ['notificacion', 'solicitud', 'elemento_plano', 'puesto', 'feria', 'usuario']) {
+  for (const tabla of ['asistencia', 'resena', 'lista_espera', 'envio_aviso', 'pago_linea', 'configuracion', 'cobro_publicacion', 'notificacion', 'solicitud', 'elemento_plano', 'puesto', 'feria', 'usuario']) {
     await pool.query(`DROP TABLE IF EXISTS ${tabla}`);
   }
   await pool.query('SET FOREIGN_KEY_CHECKS = 1');
@@ -55,7 +55,7 @@ async function levantarServidor() {
     await new Promise((resolve) => servidor.close(resolve));
     await pool.end();
   }
-  return { api, cerrar };
+  return { api, cerrar, base };
 }
 
 module.exports = { prepararBase, levantarServidor, ADMIN };

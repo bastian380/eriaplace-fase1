@@ -1,6 +1,12 @@
 (async () => {
-  const sesion = requerirSesion(['administrador']);
+  const sesion = requerirSesion(ROLES_GESTION);
   if (!sesion) return;
+  const esPlataforma = sesion.usuario.rol === 'administrador';
+  let adminsFeria = []; // Administradores de Feria aprobados (solo los carga la plataforma)
+  if (!esPlataforma) {
+    document.querySelector('.titulo-plano h2').textContent = 'Mis ferias';
+    document.title = 'Mis ferias - FeriaPlace';
+  }
 
   const MEDIDAS = { pequeno: [2, 2], mediano: [3, 2], grande: [4, 3] };
   const COLORES_ZONA = ['#2563eb', '#d97706', '#7c3aed', '#db2777', '#0d9488', '#65a30d', '#dc2626', '#0891b2'];
@@ -16,6 +22,7 @@
   let seleccion = null;   // puesto o elemento seleccionado (los elementos tienen esElemento: true)
   let hayCambios = false;
   let siguienteClave = 1;
+  let medidasGuardadas = null; // ancho y alto del plano tal como están guardados
 
   function mostrar(idContenedor, tipo, texto) {
     $(idContenedor).innerHTML = texto ? `<div class="mensaje ${tipo}">${esc(texto)}</div>` : '';
@@ -379,6 +386,44 @@
   $('btn-eliminar-puesto').addEventListener('click', eliminarSeleccion);
   $('btn-eliminar-elemento').addEventListener('click', eliminarSeleccion);
 
+  // ---------- Planos predefinidos ----------
+  $('t-plantilla').innerHTML = Object.entries(PLANTILLAS_PLANO)
+    .map(([valor, t]) => `<option value="${valor}">${esc(t.nombre)}</option>`).join('');
+  const pintarDescripcionPlantilla = () => {
+    $('t-descripcion').textContent = PLANTILLAS_PLANO[$('t-plantilla').value].descripcion;
+  };
+  $('t-plantilla').addEventListener('change', pintarDescripcionPlantilla);
+  pintarDescripcionPlantilla();
+
+  $('btn-aplicar-plantilla').addEventListener('click', () => {
+    const tipo = $('t-plantilla').value;
+    // Se parte del tamaño guardado, así probar varios planos predefinidos no lo agranda de más
+    const r = calcularPlantilla(tipo, puestos, elementos, medidasGuardadas.ancho, medidasGuardadas.alto);
+    if (r.error) {
+      mostrar('mensaje-plano', 'error', r.error);
+      return;
+    }
+    const hayCirculacion = elementos.some((e) => ELEMENTOS_DE_CIRCULACION.includes(e.tipo));
+    const aviso = `Se moverán los ${puestos.length} puestos al plano "${PLANTILLAS_PLANO[tipo].nombre}"`
+      + (hayCirculacion ? ' y se reemplazarán los pasillos, entradas, salidas y flechas que dibujaste' : '')
+      + (r.crecio ? `. Para que quepan, el plano crecerá a ${r.ancho}×${r.alto} cuadros` : '')
+      + '. Nada se guarda hasta que presiones "Guardar plano". ¿Continuar?';
+    if (!confirm(aviso)) return;
+    for (const [p, pos] of r.posiciones) {
+      p.pos_x = pos.pos_x;
+      p.pos_y = pos.pos_y;
+    }
+    let n = 0;
+    elementos = r.elementos.map((e) => (e.esElemento ? e : { ...e, clave: `t${siguienteClave++}${n++}`, esElemento: true, id: null }));
+    feria.ancho = r.ancho;
+    feria.alto = r.alto;
+    $('f-ancho').value = r.ancho;
+    $('f-alto').value = r.alto;
+    marcarCambios(true);
+    seleccionar(null);
+    mostrar('mensaje-plano', 'exito', `Puestos ordenados${r.crecio ? ` (el plano ahora mide ${r.ancho}×${r.alto})` : ''}. Revisa, mueve lo que quieras y presiona "Guardar plano".`);
+  });
+
   document.addEventListener('keydown', (e) => {
     if (!seleccion || ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
     const pasos = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -403,6 +448,9 @@
     mostrar('mensaje-plano');
     try {
       const cuerpo = {
+        // Un plano predefinido puede haber agrandado el plano
+        ancho: feria.ancho,
+        alto: feria.alto,
         puestos: puestos.map((p) => ({
           id: p.id, codigo: p.codigo, zona: p.zona, tamano: p.tamano,
           pos_x: p.pos_x, pos_y: p.pos_y, ancho: p.ancho, alto: p.alto, precio: p.precio,
@@ -412,9 +460,13 @@
           pos_x: e.pos_x, pos_y: e.pos_y, ancho: e.ancho, alto: e.alto,
         })),
       };
-      await apiFetch(`/ferias/${feria.id}/plano`, { method: 'PUT', body: JSON.stringify(cuerpo) });
+      const r = await apiFetch(`/ferias/${feria.id}/plano`, { method: 'PUT', body: JSON.stringify(cuerpo) });
       await abrirFeria(feria.id, true);
-      mostrar('mensaje-plano', 'exito', 'Plano guardado. Los comerciantes ya ven estos puestos.');
+      if (r.despublicada) {
+        mostrar('mensaje-plano', 'error', `Plano guardado. Agregaste ${r.puestos_por_pagar} ${r.puestos_por_pagar === 1 ? 'puesto' : 'puestos'} sin pagar, así que la feria volvió a borrador. Pide la publicación de los puestos nuevos en "Datos de la feria".`);
+      } else {
+        mostrar('mensaje-plano', 'exito', feria.publicada ? 'Plano guardado. Los comerciantes ya ven estos puestos.' : 'Plano guardado.');
+      }
       await cargarLista();
     } catch (err) {
       mostrar('mensaje-plano', 'error', err.message);
@@ -444,7 +496,7 @@
     listaFerias.innerHTML = ferias.map((f) => `
       <button type="button" class="feria-item ${feria && feria.id === f.id ? 'activa' : ''}" data-id="${f.id}">
         <strong>${esc(f.nombre)}</strong>
-        <span class="texto-suave">${f.publicada ? 'Publicada' : 'Oculta (borrador)'}</span>
+        <span class="texto-suave">${f.publicada ? 'Publicada' : 'Oculta (borrador)'}${esPlataforma && f.admin_feria_nombre ? ` · ${esc(f.admin_feria_nombre)}` : ''}</span>
         <span class="texto-suave">${f.fecha_inicio ? esc(formatearRangoFechas(f.fecha_inicio, f.fecha_cierre)) : 'Sin fechas'}</span>
         ${f.precio_puesto !== null ? `<span class="precio">${formatearPesos(f.precio_puesto)} por puesto</span>` : ''}
         <span class="disponibles">${f.total_puestos} puestos · ${f.puestos_disponibles} disponibles</span>
@@ -589,7 +641,8 @@
     $('f-descripcion').value = f ? f.descripcion || '' : '';
     $('f-ancho').value = f ? f.ancho : 24;
     $('f-alto').value = f ? f.alto : 14;
-    $('f-publicada').checked = f ? f.publicada : true;
+    $('f-publicada').checked = f ? f.publicada : esPlataforma;
+    pintarPublicacion(f);
     $('f-comuna').value = f ? f.comuna || '' : '';
     ubicacion = f && f.latitud !== null ? { latitud: f.latitud, longitud: f.longitud } : null;
     perimetro = f && f.perimetro ? f.perimetro : null;
@@ -614,6 +667,7 @@
   async function abrirFeria(id, mantenerMensajes) {
     const datos = await apiFetch(`/ferias/${id}`);
     feria = datos;
+    medidasGuardadas = { ancho: datos.ancho, alto: datos.alto };
     puestos = datos.puestos.map((p) => ({ ...p, clave: `p${p.id}` }));
     elementos = (datos.elementos || []).map((e) => ({ ...e, clave: `e${e.id}`, esElemento: true }));
     seleccion = null;
@@ -682,6 +736,7 @@
       ancho: Number($('f-ancho').value),
       alto: Number($('f-alto').value),
       publicada: $('f-publicada').checked,
+      admin_feria_id: esPlataforma ? $('f-admin-feria').value || null : undefined,
       comuna: $('f-comuna').value,
       latitud: ubicacion ? ubicacion.latitud : null,
       longitud: ubicacion ? ubicacion.longitud : null,
@@ -698,6 +753,12 @@
       cuerpo.prefijo_puestos = $('f-prefijo-puestos').value.trim();
     }
     try {
+      // La plataforma cambia el Administrador de Feria a cargo con una llamada aparte
+      if (feria && esPlataforma && String(feria.admin_feria_id || '') !== $('f-admin-feria').value) {
+        await apiFetch(`/ferias/${feria.id}/administrador`, {
+          method: 'PUT', body: JSON.stringify({ admin_feria_id: $('f-admin-feria').value || null }),
+        });
+      }
       const guardada = feria
         ? await apiFetch(`/ferias/${feria.id}`, { method: 'PUT', body: JSON.stringify(cuerpo) })
         : await apiFetch('/ferias', { method: 'POST', body: JSON.stringify(cuerpo) });
@@ -707,6 +768,9 @@
       let textoNueva = 'Feria creada. Ahora dibuja sus puestos en el plano de abajo.';
       if (eraNueva && guardada.total_puestos > 0) {
         textoNueva = `Feria creada con ${guardada.total_puestos} puestos. Puedes acomodarlos en el plano de abajo.`;
+      }
+      if (eraNueva && guardada.admin_feria_id) {
+        textoNueva += ' Quedó en borrador: cuando el plano esté listo, presiona "Pedir publicación".';
       }
       mostrar('mensaje-feria', 'exito', eraNueva
         ? textoNueva
@@ -730,6 +794,75 @@
       mostrar('mensaje-feria', 'error', err.message);
     }
   });
+
+  // ---------- Publicación pagada (modelo de negocio) ----------
+  // Las ferias de un Administrador de Feria se publican cuando la plataforma recibe el pago de sus puestos
+  function pintarPublicacion(f) {
+    const caja = $('caja-publicacion');
+    $('f-dueno').classList.toggle('oculto', !esPlataforma);
+    if (esPlataforma) $('f-admin-feria').value = f && f.admin_feria_id ? String(f.admin_feria_id) : '';
+    const dePago = f ? Boolean(f.admin_feria_id) : !esPlataforma;
+    const cubiertos = f ? f.puestos_pagados : 0;
+    const total = f ? f.total_puestos : 0;
+    const cubierta = total > 0 && cubiertos >= total;
+    // El Administrador de Feria solo puede marcar "Publicada" cuando todos sus puestos están pagados
+    $('f-publicada').disabled = dePago && !cubierta && !(f && f.publicada);
+    $('campo-publicada').classList.toggle('oculto', !f && !esPlataforma);
+    caja.classList.toggle('oculto', !dePago);
+    if (!dePago) return;
+    if (!f) {
+      caja.innerHTML = '<legend>Publicación</legend><p class="texto-suave">Tu feria se crea como borrador. Cuando el plano esté listo, pide su publicación: FeriaPlace te cobra una tarifa por cada puesto publicado y, al registrar tu pago, la feria queda visible para los comerciantes.</p>';
+      return;
+    }
+    const faltan = Math.max(0, total - cubiertos - f.puestos_pago_pendiente);
+    caja.innerHTML = `
+      <legend>Publicación</legend>
+      <p>${f.publicada ? '<span class="badge confirmada">Publicada</span>' : '<span class="badge pendiente">Borrador</span>'}
+        ${cubiertos} de ${total} puestos pagados${f.puestos_pago_pendiente ? ` · ${f.puestos_pago_pendiente} con cobro pendiente` : ''}.</p>
+      <p class="texto-suave" id="texto-tarifa"></p>
+      <div class="acciones-fila">
+        ${faltan > 0 ? `<button type="button" id="btn-pedir-publicacion" class="sin-margen">Pedir publicación de ${faltan} ${faltan === 1 ? 'puesto' : 'puestos'}</button>` : ''}
+        ${!f.publicada && cubierta ? '<button type="button" id="btn-publicar-pagada" class="sin-margen">Publicar ahora</button>' : ''}
+        <a href="cobros.html">Ver ${esPlataforma ? 'cobros' : 'mis pagos a la plataforma'}</a>
+      </div>`;
+    apiFetch('/cobros/tarifa').then(({ tarifa_puesto: t }) => {
+      const nodo = $('texto-tarifa');
+      if (nodo) nodo.textContent = `Tarifa de la plataforma: ${formatearPesos(t)} por puesto publicado.${faltan > 0 ? ` Publicar los ${faltan} puestos que faltan cuesta ${formatearPesos(faltan * t)}.` : ''}`;
+    }).catch(() => {});
+    const pedir = $('btn-pedir-publicacion');
+    if (pedir) pedir.addEventListener('click', async () => {
+      if (hayCambios) {
+        mostrar('mensaje-feria', 'error', 'Primero guarda o descarta los cambios del plano.');
+        return;
+      }
+      try {
+        const r = await apiFetch(`/ferias/${f.id}/publicacion`, { method: 'POST', body: '{}' });
+        await cargarLista();
+        await abrirFeria(f.id, true);
+        mostrar('mensaje-feria', 'exito', r.cobro
+          ? `Listo. Se generó un cobro de ${formatearPesos(r.cobro.monto)} por ${r.cobro.puestos} puestos. Cuando FeriaPlace registre tu pago, la feria se publicará sola.`
+          : 'Tu feria ya está publicada.');
+      } catch (err) {
+        mostrar('mensaje-feria', 'error', err.message);
+      }
+    });
+    const publicar = $('btn-publicar-pagada');
+    if (publicar) publicar.addEventListener('click', () => {
+      $('f-publicada').disabled = false;
+      $('f-publicada').checked = true;
+      $('form-feria').requestSubmit();
+    });
+  }
+
+  if (esPlataforma) {
+    try {
+      adminsFeria = await apiFetch('/usuarios?rol=admin_feria&estado=aprobado');
+      $('f-admin-feria').innerHTML = '<option value="">Ninguno: la gestiona la plataforma</option>'
+        + adminsFeria.map((u) => `<option value="${u.id}">${esc(u.nombre)}${u.organizacion ? ` (${esc(u.organizacion)})` : ''}</option>`).join('');
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   // El mapa se crea con la tarjeta visible para que Leaflet calcule bien su tamaño
   $('tarjeta-datos').classList.remove('oculto');

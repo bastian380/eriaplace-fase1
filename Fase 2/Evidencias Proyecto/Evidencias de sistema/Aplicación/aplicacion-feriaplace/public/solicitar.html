@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Solicitar puesto - FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -18,6 +20,7 @@
     <form id="form-solicitud">
       <label for="feria">Feria *</label>
       <select id="feria" required></select>
+      <div id="aviso-llena" class="mensaje oculto">Esta feria no tiene puestos libres. Anótate en la lista de espera y, cuando se libere uno, te lo ofreceremos por orden de llegada.</div>
 
       <label>Puesto preferido (opcional)</label>
       <p class="texto-suave sin-margen">Este es el plano de la feria visto desde arriba. Cada rectángulo es un puesto y su tamaño en el dibujo es su tamaño real. Toca un puesto <strong>verde</strong> para elegirlo; los <strong>grises</strong> ya están ocupados.</p>
@@ -50,7 +53,7 @@
       <label for="comentario">Comentario adicional (opcional)</label>
       <textarea id="comentario" rows="3"></textarea>
 
-      <button type="submit">Enviar solicitud</button>
+      <button type="submit" id="btn-enviar">Enviar solicitud</button>
     </form>
     <div id="mensaje"></div>
   </div>

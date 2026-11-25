@@ -1,4 +1,10 @@
+<!DOCTYPE html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Avisos - FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
 <link rel="stylesheet" href="css/style.css">
 <header>
   <a href="index.html">FeriaPlace</a>
@@ -7,8 +13,18 @@
 <main>
   <div class="tarjeta">
     <h2>Avisos</h2>
-    <p class="texto-suave">Aquí te avisamos cuando revisan tu cuenta, cuando te asignan un puesto y cuando registran tu pago.</p>
+    <p class="texto-suave">Aquí te avisamos de lo importante: tu cuenta, tus puestos, tus solicitudes y tus pagos.</p>
     <div id="lista-avisos"><p>Cargando...</p></div>
+  </div>
+  <div class="tarjeta oculto" id="tarjeta-envios">
+    <h2>Bandeja de envíos</h2>
+    <p class="texto-suave">Lo que la app mandó por correo o WhatsApp. "Simulado" significa que quedó registrado aquí, pero no salió de la app.</p>
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Para</th><th>Canal</th><th>Aviso</th><th>Estado</th></tr>
+      </thead>
+      <tbody id="tabla-envios"></tbody>
+    </table>
   </div>
 </main>
 <script src="js/api.js"></script>

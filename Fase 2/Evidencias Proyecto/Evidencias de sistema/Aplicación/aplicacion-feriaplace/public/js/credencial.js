@@ -1,5 +1,5 @@
 (async () => {
-  const sesion = requerirSesion(['comerciante', 'administrador']);
+  const sesion = requerirSesion(['comerciante', 'administrador', 'admin_feria']);
   if (!sesion) return;
 
   const contenedor = document.getElementById('credencial');

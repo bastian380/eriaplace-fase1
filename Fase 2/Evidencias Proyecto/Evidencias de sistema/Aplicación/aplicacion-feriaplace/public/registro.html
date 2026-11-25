@@ -1,4 +1,10 @@
+<!DOCTYPE html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crear cuenta - FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
 <link rel="stylesheet" href="css/style.css">
 <header>
   <a href="index.html">FeriaPlace</a>
@@ -6,9 +12,19 @@
 </header>
 <main>
   <div class="tarjeta" style="max-width:420px;margin:0 auto;">
-    <h2>Crear cuenta de comerciante</h2>
-    <p style="font-size:0.9rem;">Tu cuenta quedará pendiente hasta que el administrador la revise y la apruebe.</p>
+    <h2>Crear cuenta</h2>
+    <p style="font-size:0.9rem;">Tu cuenta quedará pendiente hasta que FeriaPlace la revise y la apruebe.</p>
     <form id="form-registro">
+      <label for="tipo-cuenta">Tipo de cuenta</label>
+      <select id="tipo-cuenta">
+        <option value="comerciante">Comerciante: quiero arrendar un puesto</option>
+        <option value="admin_feria">Administrador de Feria: organizo una feria y quiero publicar sus puestos</option>
+      </select>
+      <p id="ayuda-admin-feria" class="texto-suave oculto">Como Administrador de Feria creas tu feria con su plano, la publicas pagando a FeriaPlace una tarifa por cada puesto publicado, y asignas los puestos a los comerciantes.</p>
+      <div id="campo-organizacion" class="oculto">
+        <label for="organizacion">Organización o feria que administras</label>
+        <input type="text" id="organizacion" maxlength="150" placeholder="Ej: Feria Navideña de Peñalolén">
+      </div>
       <label for="nombre">Nombre</label>
       <input type="text" id="nombre" required>
       <label for="email">Email</label>
@@ -17,7 +33,7 @@
       <input type="password" id="password" minlength="8" required>
       <label for="telefono">Teléfono (opcional)</label>
       <input type="tel" id="telefono" maxlength="30">
-      <label for="motivo">¿Qué quieres vender y por qué te interesa un puesto?</label>
+      <label for="motivo" id="etiqueta-motivo">¿Qué quieres vender y por qué te interesa un puesto?</label>
       <textarea id="motivo" minlength="10" maxlength="500" rows="4" required placeholder="Ej: vendo verduras de mi huerta en Maipú y busco un puesto los fines de semana."></textarea>
       <button type="submit">Enviar solicitud de cuenta</button>
     </form>

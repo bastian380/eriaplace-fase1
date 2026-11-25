@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pago en línea (prueba) - FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
+<link rel="stylesheet" href="css/style.css">
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main>
+  <div class="tarjeta">
+    <div class="mensaje">Modo prueba: esta pasarela es simulada. No se pide ninguna tarjeta y no se cobra dinero real.</div>
+    <h2>Pago en línea</h2>
+    <div id="detalle-pago"></div>
+    <div id="acciones-pago" class="acciones-fila oculto" style="margin-top:12px;">
+      <button id="btn-aprobar" class="sin-margen">Simular pago aprobado</button>
+      <button id="btn-rechazar" class="peligro sin-margen">Simular pago rechazado</button>
+    </div>
+    <div id="mensaje-pago"></div>
+    <p id="volver-pago" class="oculto" style="margin-top:12px;"><a id="enlace-volver" href="index.html">Volver</a></p>
+  </div>
+</main>
+<script src="js/api.js"></script>
+<script src="js/pasarela-prueba.js"></script>

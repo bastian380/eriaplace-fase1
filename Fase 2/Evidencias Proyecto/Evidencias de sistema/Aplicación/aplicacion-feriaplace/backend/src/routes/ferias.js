@@ -4,6 +4,12 @@ const { verificarToken, usuarioOpcional, requireRol } = require('../middleware/a
 const { COMUNAS, comunaEnPunto } = require('../comunas');
 const { ubicarEnFilas } = require('../plano');
 const { leerElementos, guardarElementos } = require('../elementos');
+const {
+  ROLES_GESTION, esPlataforma, esAdminFeria, puedeGestionar, feriaGestionable, filtroFerias,
+  cobertura, puedePublicarse, tarifaPorPuesto, idsPlataforma,
+} = require('../permisos');
+const { notificar } = require('../notificar');
+const { ofrecerPuestosLibres } = require('../listaEspera');
 
 const router = express.Router();
 
@@ -13,18 +19,18 @@ const MAX_PUESTOS_INICIALES = 200;
 const PRECIO_MAXIMO = 100000000;
 
 const SQL_FERIA_CON_CONTEO = `
-  SELECT f.id, f.nombre, f.lugar, f.fecha_texto, f.descripcion, f.ancho, f.alto, f.publicada,
+  SELECT f.id, f.admin_feria_id, f.nombre, f.lugar, f.fecha_texto, f.descripcion, f.ancho, f.alto, f.publicada,
          f.comuna, f.latitud, f.longitud, f.perimetro, f.precio_puesto,
          DATE_FORMAT(f.fecha_inicio, '%Y-%m-%d') AS fecha_inicio,
          DATE_FORMAT(f.fecha_cierre, '%Y-%m-%d') AS fecha_cierre,
+         (SELECT u.nombre FROM usuario u WHERE u.id = f.admin_feria_id) AS admin_feria_nombre,
+         (SELECT COALESCE(SUM(c.puestos), 0) FROM cobro_publicacion c WHERE c.feria_id = f.id AND c.estado = 'pagado') AS puestos_pagados,
+         (SELECT COALESCE(SUM(c.puestos), 0) FROM cobro_publicacion c WHERE c.feria_id = f.id AND c.estado = 'pendiente') AS puestos_pago_pendiente,
          COUNT(p.id) AS total_puestos,
          COALESCE(SUM(p.estado = 'disponible'), 0) AS puestos_disponibles
   FROM feria f
   LEFT JOIN puesto p ON p.feria_id = f.id`;
 
-function esAdmin(req) {
-  return req.usuario && req.usuario.rol === 'administrador';
-}
 
 function normalizarConteo(feria) {
   return {
@@ -36,6 +42,8 @@ function normalizarConteo(feria) {
     precio_puesto: feria.precio_puesto === null ? null : Number(feria.precio_puesto),
     total_puestos: Number(feria.total_puestos),
     puestos_disponibles: Number(feria.puestos_disponibles),
+    puestos_pagados: Number(feria.puestos_pagados),
+    puestos_pago_pendiente: Number(feria.puestos_pago_pendiente),
   };
 }
 
@@ -148,12 +156,15 @@ function leerDatosFeria(body) {
   };
 }
 
-// Lista de ferias. Visitantes y comerciantes ven solo las publicadas; con ?todas=1 el administrador ve todas.
+// Lista de ferias. Visitantes y comerciantes ven solo las publicadas.
+// Con ?todas=1 el administrador de la plataforma ve todas y el Administrador de Feria ve todas las suyas (también borradores).
 router.get('/', usuarioOpcional, async (req, res) => {
-  const todas = req.query.todas === '1' && esAdmin(req);
+  const gestion = req.query.todas === '1' && (esPlataforma(req) || esAdminFeria(req));
+  const filtro = gestion ? filtroFerias(req) : { sql: 'f.publicada = 1', params: [] };
   const [ferias] = await pool.query(
-    `${SQL_FERIA_CON_CONTEO} ${todas ? '' : 'WHERE f.publicada = 1'} GROUP BY f.id
-     ORDER BY f.fecha_inicio IS NULL, f.fecha_inicio, f.creado_en DESC, f.id DESC`
+    `${SQL_FERIA_CON_CONTEO} WHERE ${filtro.sql} GROUP BY f.id
+     ORDER BY f.fecha_inicio IS NULL, f.fecha_inicio, f.creado_en DESC, f.id DESC`,
+    filtro.params
   );
   res.json(ferias.map(normalizarConteo));
 });
@@ -161,7 +172,7 @@ router.get('/', usuarioOpcional, async (req, res) => {
 // Una feria con su plano y todos sus puestos
 router.get('/:id', usuarioOpcional, async (req, res) => {
   const [ferias] = await pool.query(`${SQL_FERIA_CON_CONTEO} WHERE f.id = ? GROUP BY f.id`, [req.params.id]);
-  if (ferias.length === 0 || (!ferias[0].publicada && !esAdmin(req))) {
+  if (ferias.length === 0 || (!ferias[0].publicada && !puedeGestionar(req, ferias[0]))) {
     return res.status(404).json({ error: 'Feria no encontrada' });
   }
   const [puestos] = await pool.query(
@@ -199,22 +210,40 @@ function leerPuestosIniciales(body, datos) {
   return { puestos, alto: Math.max(datos.alto, altoNecesario) };
 }
 
-// El administrador crea una feria nueva. Si indica una cantidad de puestos, se crean ya ubicados en el plano.
-router.post('/', verificarToken, requireRol('administrador'), async (req, res) => {
+// Revisa que el id indicado sea un Administrador de Feria aprobado (para asignarle una feria)
+async function leerDuenoFeria(valor) {
+  if (valor === undefined || valor === null || valor === '') return { id: null };
+  const [filas] = await pool.query(
+    "SELECT id FROM usuario WHERE id = ? AND rol = 'admin_feria' AND estado = 'aprobado'", [valor]);
+  if (filas.length === 0) return { error: 'El usuario elegido no es un Administrador de Feria aprobado' };
+  return { id: filas[0].id };
+}
+
+// El administrador de la plataforma o un Administrador de Feria crean una feria nueva.
+// Si indica una cantidad de puestos, se crean ya ubicados en el plano.
+// La feria de un Administrador de Feria nace como borrador: se publica cuando la plataforma recibe el pago de sus puestos.
+router.post('/', verificarToken, requireRol(...ROLES_GESTION), async (req, res) => {
   const { datos, error } = leerDatosFeria(req.body);
   if (error) return res.status(400).json({ error });
   const iniciales = leerPuestosIniciales(req.body, datos);
   if (iniciales.error) return res.status(400).json({ error: iniciales.error });
   datos.alto = iniciales.alto;
+  let duenoId = req.usuario.id;
+  if (esPlataforma(req)) {
+    const dueno = await leerDuenoFeria(req.body.admin_feria_id);
+    if (dueno.error) return res.status(400).json({ error: dueno.error });
+    duenoId = dueno.id;
+  }
+  if (duenoId) datos.publicada = 0;
 
   const conexion = await pool.getConnection();
   try {
     await conexion.beginTransaction();
     const [resultado] = await conexion.query(
-      `INSERT INTO feria (nombre, lugar, fecha_texto, fecha_inicio, fecha_cierre, precio_puesto, descripcion,
+      `INSERT INTO feria (admin_feria_id, nombre, lugar, fecha_texto, fecha_inicio, fecha_cierre, precio_puesto, descripcion,
          ancho, alto, publicada, comuna, latitud, longitud, perimetro)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [datos.nombre, datos.lugar, datos.fecha_texto, datos.fecha_inicio, datos.fecha_cierre, datos.precio_puesto,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [duenoId, datos.nombre, datos.lugar, datos.fecha_texto, datos.fecha_inicio, datos.fecha_cierre, datos.precio_puesto,
         datos.descripcion, datos.ancho, datos.alto, datos.publicada, datos.comuna, datos.latitud, datos.longitud,
         datos.perimetro ? JSON.stringify(datos.perimetro) : null]
     );
@@ -226,8 +255,8 @@ router.post('/', verificarToken, requireRol('administrador'), async (req, res) =
     }
     await conexion.commit();
     res.status(201).json({
-      id: resultado.insertId, ...datos, perimetro: datos.perimetro ?? null, publicada: Boolean(datos.publicada),
-      total_puestos: iniciales.puestos.length,
+      id: resultado.insertId, admin_feria_id: duenoId, ...datos, perimetro: datos.perimetro ?? null,
+      publicada: Boolean(datos.publicada), total_puestos: iniciales.puestos.length,
     });
   } catch (err) {
     await conexion.rollback();
@@ -238,10 +267,19 @@ router.post('/', verificarToken, requireRol('administrador'), async (req, res) =
   }
 });
 
-// El administrador cambia los datos generales de la feria (nombre, fechas, precio, lugar, comuna, ubicación, plano, publicada)
-router.put('/:id', verificarToken, requireRol('administrador'), async (req, res) => {
+// Quien gestiona la feria cambia sus datos generales (nombre, fechas, precio, lugar, comuna, ubicación, plano, publicada).
+// Una feria de Administrador de Feria solo se puede publicar si todos sus puestos están pagados a la plataforma.
+router.put('/:id', verificarToken, requireRol(...ROLES_GESTION), async (req, res) => {
   const { datos, error } = leerDatosFeria(req.body);
   if (error) return res.status(400).json({ error });
+  const permiso = await feriaGestionable(req, req.params.id);
+  if (permiso.error) return res.status(permiso.status).json({ error: permiso.error });
+  // Si no se indica, la feria queda publicada o en borrador como estaba
+  if (req.body.publicada === undefined) datos.publicada = permiso.feria.publicada;
+  if (datos.publicada && !permiso.feria.publicada) {
+    const publicable = await puedePublicarse(permiso.feria);
+    if (!publicable.ok) return res.status(402).json({ error: publicable.error });
+  }
   const [[limites]] = await pool.query(
     `SELECT MAX(pos_x + ancho) AS max_x, MAX(pos_y + alto) AS max_y FROM (
        SELECT pos_x, pos_y, ancho, alto FROM puesto WHERE feria_id = ?
@@ -265,16 +303,23 @@ router.put('/:id', verificarToken, requireRol('administrador'), async (req, res)
   res.json({ id: Number(req.params.id), ...datos, publicada: Boolean(datos.publicada) });
 });
 
-// El administrador elimina una feria solo si no tiene puestos ocupados ni solicitudes
-router.delete('/:id', verificarToken, requireRol('administrador'), async (req, res) => {
+// Quien gestiona la feria la elimina solo si no tiene puestos ocupados, solicitudes ni pagos a la plataforma
+router.delete('/:id', verificarToken, requireRol(...ROLES_GESTION), async (req, res) => {
+  const permiso = await feriaGestionable(req, req.params.id);
+  if (permiso.error) return res.status(permiso.status).json({ error: permiso.error });
   const conexion = await pool.getConnection();
   try {
     await conexion.beginTransaction();
     const [[uso]] = await conexion.query(
       `SELECT (SELECT COUNT(*) FROM puesto WHERE feria_id = ? AND estado = 'ocupado') AS ocupados,
-              (SELECT COUNT(*) FROM solicitud WHERE feria_id = ?) AS solicitudes`,
-      [req.params.id, req.params.id]
+              (SELECT COUNT(*) FROM solicitud WHERE feria_id = ?) AS solicitudes,
+              (SELECT COUNT(*) FROM cobro_publicacion WHERE feria_id = ? AND estado = 'pagado') AS pagos`,
+      [req.params.id, req.params.id, req.params.id]
     );
+    if (uso.pagos > 0) {
+      await conexion.rollback();
+      return res.status(409).json({ error: 'Esta feria tiene pagos de publicación registrados. Puedes despublicarla para ocultarla.' });
+    }
     if (uso.ocupados > 0 || uso.solicitudes > 0) {
       await conexion.rollback();
       return res.status(409).json({
@@ -326,8 +371,9 @@ function validarPlano(puestos, feria) {
   return null;
 }
 
-// El administrador guarda el plano completo: crea, mueve, edita y elimina puestos en una sola operación
-router.put('/:id/plano', verificarToken, requireRol('administrador'), async (req, res) => {
+// Quien gestiona la feria guarda el plano completo: crea, mueve, edita y elimina puestos en una sola operación.
+// Si una feria publicada de un Administrador de Feria queda con más puestos que los pagados, vuelve a borrador.
+router.put('/:id/plano', verificarToken, requireRol(...ROLES_GESTION), async (req, res) => {
   const lista = Array.isArray(req.body.puestos) ? req.body.puestos : null;
   if (!lista) return res.status(400).json({ error: 'Debes enviar la lista de puestos' });
   const puestos = lista.map((p) => ({
@@ -346,11 +392,24 @@ router.put('/:id/plano', verificarToken, requireRol('administrador'), async (req
   const conexion = await pool.getConnection();
   try {
     await conexion.beginTransaction();
-    const [ferias] = await conexion.query('SELECT * FROM feria WHERE id = ? FOR UPDATE', [req.params.id]);
-    if (ferias.length === 0) {
+    const permiso = await feriaGestionable(req, req.params.id, conexion, true);
+    if (permiso.error) {
       await conexion.rollback();
-      return res.status(404).json({ error: 'Feria no encontrada' });
+      return res.status(permiso.status).json({ error: permiso.error });
     }
+    const ferias = [permiso.feria];
+    // Opcional: nuevo tamaño del plano (por ejemplo, cuando un plano predefinido necesita más espacio)
+    const medidas = {};
+    for (const campo of ['ancho', 'alto']) {
+      if (req.body[campo] === undefined) continue;
+      const valor = Number(req.body[campo]);
+      if (!Number.isInteger(valor) || valor < LIMITE_PLANO.min || valor > LIMITE_PLANO.max) {
+        await conexion.rollback();
+        return res.status(400).json({ error: `El ${campo} del plano debe ser un número entre ${LIMITE_PLANO.min} y ${LIMITE_PLANO.max}` });
+      }
+      medidas[campo] = valor;
+    }
+    ferias[0] = { ...ferias[0], ...medidas };
     const errorPlano = validarPlano(puestos, ferias[0]);
     if (errorPlano) {
       await conexion.rollback();
@@ -400,14 +459,101 @@ router.put('/:id/plano', verificarToken, requireRol('administrador'), async (req
       }
     }
     if (elementos) await guardarElementos(conexion, req.params.id, elementos.elementos);
+    if (Object.keys(medidas).length > 0) {
+      if (!elementos) {
+        // Los elementos que no se enviaron también deben caber en el nuevo tamaño
+        const [[fuera]] = await conexion.query(
+          'SELECT COUNT(*) AS n FROM elemento_plano WHERE feria_id = ? AND (pos_x + ancho > ? OR pos_y + alto > ?)',
+          [req.params.id, ferias[0].ancho, ferias[0].alto]
+        );
+        if (fuera.n > 0) {
+          await conexion.rollback();
+          return res.status(400).json({ error: 'Con ese tamaño algunos elementos del plano quedan afuera' });
+        }
+      }
+      await conexion.query('UPDATE feria SET ancho = ?, alto = ? WHERE id = ?', [ferias[0].ancho, ferias[0].alto, req.params.id]);
+    }
+    let despublicada = false;
+    let porPagar = 0;
+    if (ferias[0].admin_feria_id && ferias[0].publicada) {
+      const c = await cobertura(req.params.id, conexion);
+      porPagar = Math.max(0, c.total - c.pagados);
+      if (porPagar > 0) {
+        await conexion.query('UPDATE feria SET publicada = 0 WHERE id = ?', [req.params.id]);
+        despublicada = true;
+      }
+    }
     await conexion.commit();
-    res.json({ guardado: true, total: puestos.length, eliminados: aEliminar.length });
+    // Si se agregaron puestos y hay gente esperando, se les ofrecen
+    await ofrecerPuestosLibres(req.params.id).catch((err) => console.error('No se pudo avisar a la lista de espera:', err.message));
+    res.json({ guardado: true, total: puestos.length, eliminados: aEliminar.length, despublicada, puestos_por_pagar: porPagar });
   } catch (err) {
     await conexion.rollback();
     console.error(err);
     res.status(500).json({ error: 'Error al guardar el plano' });
   } finally {
     conexion.release();
+  }
+});
+
+// El administrador de la plataforma asigna la feria a un Administrador de Feria (o la deja a cargo de la plataforma con null)
+router.put('/:id/administrador', verificarToken, requireRol('administrador'), async (req, res) => {
+  const dueno = await leerDuenoFeria(req.body.admin_feria_id);
+  if (dueno.error) return res.status(400).json({ error: dueno.error });
+  const [resultado] = await pool.query('UPDATE feria SET admin_feria_id = ? WHERE id = ?', [dueno.id, req.params.id]);
+  if (resultado.affectedRows === 0) return res.status(404).json({ error: 'Feria no encontrada' });
+  if (dueno.id) {
+    const [[f]] = await pool.query('SELECT nombre FROM feria WHERE id = ?', [req.params.id]);
+    await notificar(dueno.id, {
+      titulo: `Ahora administras "${f.nombre}"`,
+      mensaje: `La plataforma te asignó la feria "${f.nombre}". Ya puedes gestionar su plano, sus solicitudes y sus pagos.`,
+      enlace: 'admin-ferias.html',
+    });
+  }
+  res.json({ id: Number(req.params.id), admin_feria_id: dueno.id });
+});
+
+// El Administrador de Feria pide publicar su feria: se genera el cobro de la plataforma por los puestos que aún no están
+// pagados ni cobrados (puestos x tarifa vigente). Cuando la plataforma registra el pago, la feria se publica.
+router.post('/:id/publicacion', verificarToken, requireRol(...ROLES_GESTION), async (req, res) => {
+  const permiso = await feriaGestionable(req, req.params.id);
+  if (permiso.error) return res.status(permiso.status).json({ error: permiso.error });
+  const { feria } = permiso;
+  if (!feria.admin_feria_id) {
+    return res.status(400).json({ error: 'Las ferias a cargo de la plataforma no pagan publicación' });
+  }
+  try {
+    const c = await cobertura(feria.id);
+    if (c.total === 0) return res.status(400).json({ error: 'Agrega puestos al plano antes de pedir la publicación' });
+    const faltan = c.total - c.pagados - c.pendientes;
+    if (faltan <= 0) {
+      if (c.pendientes > 0) {
+        return res.status(409).json({ error: 'Ya tienes un cobro pendiente que cubre los puestos de esta feria' });
+      }
+      // Todo pagado: se publica de inmediato
+      await pool.query('UPDATE feria SET publicada = 1 WHERE id = ?', [feria.id]);
+      return res.json({ publicada: true, cobro: null });
+    }
+    const tarifa = await tarifaPorPuesto();
+    const monto = faltan * tarifa;
+    const [resultado] = await pool.query(
+      'INSERT INTO cobro_publicacion (feria_id, admin_feria_id, puestos, tarifa, monto) VALUES (?, ?, ?, ?, ?)',
+      [feria.id, feria.admin_feria_id, faltan, tarifa, monto]
+    );
+    for (const id of await idsPlataforma()) {
+      await notificar(id, {
+        titulo: `Cobro nuevo: "${feria.nombre}"`,
+        mensaje: `Se pidió publicar ${faltan} puestos de "${feria.nombre}" por $${monto.toLocaleString('es-CL')}. Registra el pago cuando lo recibas.`,
+        enlace: 'cobros.html',
+      });
+    }
+    return res.status(201).json({
+      publicada: false,
+      cobro: { id: resultado.insertId, feria_id: feria.id, puestos: faltan, tarifa, monto, estado: 'pendiente' },
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Error al pedir la publicación' });
   }
 });
 

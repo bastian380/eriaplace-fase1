@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asistencia - FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main class="ancho">
+  <div class="tarjeta">
+    <h2>Asistencia del día</h2>
+    <p class="texto-suave">Escanea la credencial QR de cada comerciante cuando llega a su puesto. También puedes pegar su código o marcarlo en la lista.</p>
+    <div class="buscador">
+      <select id="feria" aria-label="Feria"></select>
+      <input type="date" id="fecha" aria-label="Día">
+    </div>
+    <div class="acciones-fila" style="margin-top:12px;">
+      <button type="button" id="btn-camara" class="sin-margen">Abrir cámara</button>
+    </div>
+    <div id="caja-camara" class="caja-camara oculto">
+      <video id="video" playsinline muted></video>
+      <canvas id="lienzo" class="oculto"></canvas>
+    </div>
+    <form id="form-codigo" class="buscador" style="margin-top:12px;">
+      <input type="search" id="codigo" placeholder="Código de la credencial" autocomplete="off" aria-label="Código de la credencial">
+      <button type="submit" class="secundario sin-margen">Registrar</button>
+    </form>
+    <div id="resultado"></div>
+  </div>
+  <div class="tarjeta">
+    <div class="titulo-plano">
+      <h2 id="titulo-lista">Puestos</h2>
+    </div>
+    <div id="resumen" class="resumen-pagos"></div>
+    <table>
+      <thead>
+        <tr><th>Puesto</th><th>Comerciante</th><th>Rubro</th><th>Pago</th><th>Asistencia</th><th>Acción</th></tr>
+      </thead>
+      <tbody id="tabla-asistencia"></tbody>
+    </table>
+  </div>
+</main>
+<script src="js/api.js"></script>
+<script src="vendor/jsqr/jsQR.js"></script>
+<script src="js/asistencia.js"></script>
+</body>
+</html>

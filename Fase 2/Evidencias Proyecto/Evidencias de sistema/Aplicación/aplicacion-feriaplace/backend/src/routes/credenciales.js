@@ -1,14 +1,38 @@
+const os = require('os');
 const express = require('express');
 const QRCode = require('qrcode');
 const pool = require('../db');
 const { verificarToken } = require('../middleware/auth');
-const { codigoCredencial, leerCodigo } = require('../credencial');
+const { codigoCredencial, leerCodigo, hoyEnChile } = require('../credencial');
 const { urlApp } = require('../notificar');
+const { puedeGestionar } = require('../permisos');
 
 const router = express.Router();
 
+// Si la credencial se abre en "localhost", un celular no puede seguir ese enlace.
+// En ese caso el QR usa la IP del computador en la red WiFi (ej: 192.168.1.20), para escanearlo desde la misma red.
+function ipEnLaRed() {
+  for (const lista of Object.values(os.networkInterfaces())) {
+    for (const red of lista || []) {
+      if (red.family === 'IPv4' && !red.internal && !red.address.startsWith('169.254.')) return red.address;
+    }
+  }
+  return null;
+}
+
+function baseParaQr(req) {
+  if (process.env.APP_URL) return urlApp();
+  const host = req.get('host') || '';
+  const [nombre, puerto] = host.split(':');
+  if (['localhost', '127.0.0.1', '[', ''].includes(nombre)) {
+    const ip = ipEnLaRed();
+    if (ip) return `${req.protocol}://${ip}${puerto ? `:${puerto}` : ''}`;
+  }
+  return `${req.protocol}://${host}`;
+}
+
 const SQL_CREDENCIAL = `
-  SELECT s.id, s.usuario_id, s.estado, s.estado_pago, s.monto, s.rubro,
+  SELECT s.id, s.usuario_id, s.estado, f.admin_feria_id, s.estado_pago, s.monto, s.rubro,
          u.nombre AS titular, p.codigo AS puesto, p.zona,
          f.nombre AS feria, f.lugar, f.comuna,
          DATE_FORMAT(f.fecha_inicio, '%Y-%m-%d') AS fecha_inicio,
@@ -18,11 +42,6 @@ const SQL_CREDENCIAL = `
   LEFT JOIN puesto p ON p.id = s.puesto_id
   LEFT JOIN feria f ON f.id = s.feria_id
   WHERE s.id = ?`;
-
-// Fecha de hoy en Chile, "AAAA-MM-DD"
-function hoyEnChile() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
-}
 
 // Lo que ve el inspector: si la credencial vale hoy y si el puesto está pagado
 function evaluar(c) {
@@ -54,7 +73,8 @@ router.get('/:id', verificarToken, async (req, res) => {
   try {
     const [[c]] = await pool.query(SQL_CREDENCIAL, [req.params.id]);
     const esDueno = c && c.usuario_id === req.usuario.id;
-    if (!c || (!esDueno && req.usuario.rol !== 'administrador')) {
+    // La ve el comerciante dueño, la plataforma o el Administrador de Feria de esa feria
+    if (!c || (!esDueno && !puedeGestionar(req, { admin_feria_id: c.admin_feria_id }))) {
       return res.status(404).json({ error: 'Credencial no encontrada' });
     }
     if (c.estado !== 'confirmada') {
@@ -62,7 +82,7 @@ router.get('/:id', verificarToken, async (req, res) => {
     }
     const codigo = codigoCredencial(c.id);
     // El QR lleva a la página de verificación; si la app está publicada, el inspector la abre desde su celular
-    const base = process.env.APP_URL ? urlApp() : `${req.protocol}://${req.get('host')}`;
+    const base = baseParaQr(req);
     const url = `${base}/verificar.html?c=${codigo}`;
     const qr = await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
     return res.json({ codigo, url, qr, ...evaluar(c), monto: c.monto });

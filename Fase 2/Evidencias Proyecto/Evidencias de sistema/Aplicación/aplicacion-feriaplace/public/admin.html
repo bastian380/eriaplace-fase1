@@ -1,4 +1,10 @@
-<title>Panel administrador - FeriaPlace</title>
+<!DOCTYPE html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de gestión - FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
 <link rel="stylesheet" href="css/style.css">
 <header>
   <a href="index.html">FeriaPlace</a>
@@ -33,6 +39,7 @@
     </div>
     <p class="texto-suave">Cada puesto asignado queda con su monto a pagar. Cuando el comerciante te pague (en efectivo o por transferencia), márcalo como pagado. Puedes corregir el monto si acordaron otro precio.</p>
     <div id="resumen-pagos" class="resumen-pagos"></div>
+    <button id="btn-recordatorios" class="secundario">Enviar recordatorios de pago</button>
     <table>
       <thead>
         <tr>
@@ -50,9 +57,30 @@
   </div>
 
   <div class="tarjeta">
+    <h2>Lista de espera</h2>
+    <p class="texto-suave">Comerciantes esperando un puesto en ferias llenas. Al liberar un puesto en "Pagos de puestos", se le ofrece solo al primero de la fila por 48 horas.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Lugar</th>
+          <th>Comerciante</th>
+          <th>Feria</th>
+          <th>Rubro</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-espera"></tbody>
+    </table>
+  </div>
+
+  <div class="tarjeta">
     <div class="titulo-plano">
       <h2>Reporte de ocupación por feria</h2>
-      <button id="btn-csv" class="secundario sin-margen">Descargar CSV</button>
+      <div class="acciones-fila">
+        <button id="btn-csv" class="secundario sin-margen">Descargar CSV</button>
+        <button id="btn-excel" class="sin-margen">Descargar Excel</button>
+        <button id="btn-pdf" class="sin-margen">Descargar PDF</button>
+      </div>
     </div>
     <p class="texto-suave">Cuántos puestos tiene cada feria, cuántos están ocupados y libres, y cuánto se ha cobrado.</p>
     <div id="resumen-ocupacion" class="resumen-pagos"></div>

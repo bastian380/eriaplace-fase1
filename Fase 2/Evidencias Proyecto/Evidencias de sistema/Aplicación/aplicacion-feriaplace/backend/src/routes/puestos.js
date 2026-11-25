@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { verificarToken, requireRol } = require('../middleware/auth');
+const { ROLES_GESTION, filtroFerias } = require('../permisos');
 
 const router = express.Router();
 
@@ -17,13 +18,15 @@ router.get('/', verificarToken, async (req, res) => {
   res.json(puestos);
 });
 
-// Puestos libres, usado por el administrador al asignar una solicitud
-router.get('/disponibles', verificarToken, requireRol('administrador'), async (req, res) => {
+// Puestos libres de las ferias que gestiona quien llama, usado al asignar una solicitud
+router.get('/disponibles', verificarToken, requireRol(...ROLES_GESTION), async (req, res) => {
+  const filtro = filtroFerias(req);
   const [puestos] = await pool.query(
     `SELECT p.id, p.feria_id, f.nombre AS feria_nombre, p.codigo, p.zona, p.tamano,
             COALESCE(p.precio, f.precio_puesto) AS precio
      FROM puesto p JOIN feria f ON f.id = p.feria_id
-     WHERE p.estado = 'disponible' ORDER BY f.nombre, p.codigo`
+     WHERE p.estado = 'disponible' AND ${filtro.sql} ORDER BY f.nombre, p.codigo`,
+    filtro.params
   );
   res.json(puestos);
 });

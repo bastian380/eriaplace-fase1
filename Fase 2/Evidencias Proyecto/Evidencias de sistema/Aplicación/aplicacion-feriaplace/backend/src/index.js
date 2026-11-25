@@ -1,5 +1,7 @@
 require('dotenv').config();
 const app = require('./app');
+const { recordarPagos } = require('./recordatorios');
+const { vencerOfertas } = require('./listaEspera');
 
 // Sin una clave secreta propia cualquiera podría fabricar sesiones de administrador
 const SECRETO_DE_EJEMPLO = 'pon_aqui_una_cadena_larga_y_aleatoria';
@@ -19,3 +21,11 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`FeriaPlace corriendo en http://localhost:${PORT}`);
 });
+
+// Recordatorios de pago: se revisan al partir y luego cada una hora
+function revisarRecordatorios() {
+  recordarPagos().catch((err) => console.error('No se pudieron enviar los recordatorios:', err.message));
+  vencerOfertas().catch((err) => console.error('No se pudieron revisar las ofertas de la lista de espera:', err.message));
+}
+setTimeout(revisarRecordatorios, 10000);
+setInterval(revisarRecordatorios, 60 * 60 * 1000);

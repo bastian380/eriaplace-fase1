@@ -10,6 +10,7 @@
   const parametros = new URLSearchParams(window.location.search);
 
   let feria = null;
+  let feriaLlena = false;
 
   function pintarPlano() {
     const elegido = Number(selectPuesto.value) || null;
@@ -56,6 +57,9 @@
   async function cargarFeria(id, puestoInicial) {
     feria = await apiFetch(`/ferias/${id}`);
     const disponibles = feria.puestos.filter((p) => p.estado === 'disponible');
+    feriaLlena = feria.puestos.length > 0 && disponibles.length === 0;
+    document.getElementById('aviso-llena').classList.toggle('oculto', !feriaLlena);
+    document.getElementById('btn-enviar').textContent = feriaLlena ? 'Anotarme en la lista de espera' : 'Enviar solicitud';
     selectPuesto.innerHTML = '<option value="">Sin puesto preferido</option>'
       + disponibles.map((p) => `<option value="${p.id}">${esc(p.codigo)} · ${esc(p.zona)} · ${NOMBRE_TAMANO[p.tamano]}</option>`).join('');
     const zonas = [...new Set(feria.puestos.map((p) => p.zona))].sort();
@@ -103,6 +107,11 @@
       comentario: document.getElementById('comentario').value.trim() || null,
     };
     try {
+      if (feriaLlena) {
+        const r = await apiFetch('/lista-espera', { method: 'POST', body: JSON.stringify(cuerpo) });
+        mensaje.innerHTML = `<div class="mensaje exito">Quedaste en el lugar ${r.posicion} de la lista de espera. Síguela en <a href="mis-solicitudes.html">Mis solicitudes</a>.</div>`;
+        return;
+      }
       await apiFetch('/solicitudes', { method: 'POST', body: JSON.stringify(cuerpo) });
       mensaje.innerHTML = '<div class="mensaje exito">Solicitud enviada. Revisa el estado en <a href="mis-solicitudes.html">Mis solicitudes</a>.</div>';
       document.getElementById('rubro').value = '';

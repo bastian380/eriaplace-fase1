@@ -1,8 +1,37 @@
 const API_BASE = '/api';
 
+// La sesión (token) dura 8 horas. Si ya venció, se borra para que la página pida entrar de nuevo
+// en vez de fallar con "Token inválido o expirado" al guardar.
+function tokenVencido(token) {
+  try {
+    const datos = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof datos.exp === 'number' && datos.exp * 1000 <= Date.now();
+  } catch (err) {
+    return true;
+  }
+}
+
 function obtenerSesion() {
   const raw = localStorage.getItem('feriaplace_sesion');
-  return raw ? JSON.parse(raw) : null;
+  if (!raw) return null;
+  let sesion;
+  try {
+    sesion = JSON.parse(raw);
+  } catch (err) {
+    sesion = null;
+  }
+  if (!sesion?.token || tokenVencido(sesion.token)) {
+    localStorage.removeItem('feriaplace_sesion');
+    try { sessionStorage.setItem('feriaplace_sesion_expirada', '1'); } catch (err) { /* sin almacenamiento */ }
+    return null;
+  }
+  return sesion;
+}
+
+function irAlLoginPorSesionVencida() {
+  localStorage.removeItem('feriaplace_sesion');
+  const volver = encodeURIComponent(window.location.pathname.split('/').pop() + window.location.search);
+  window.location.href = `login.html?expirada=1&volver=${volver}`;
 }
 
 function guardarSesion(sesion) {
@@ -59,6 +88,11 @@ async function apiFetch(ruta, opciones = {}) {
   const respuesta = await fetch(API_BASE + ruta, { ...opciones, headers });
   const datos = await respuesta.json().catch(() => ({}));
   if (!respuesta.ok) {
+    // Sesión vencida o firmada con otra clave: volver a entrar en vez de mostrar el error
+    if (respuesta.status === 401 && sesion?.token && ruta !== '/auth/login') {
+      irAlLoginPorSesionVencida();
+      throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    }
     if (respuesta.status === 403 && sesion?.token && /no está aprobada/.test(datos.error || '')) {
       localStorage.removeItem('feriaplace_sesion');
     }
@@ -67,6 +101,11 @@ async function apiFetch(ruta, opciones = {}) {
   return datos;
 }
 
+// Roles que gestionan ferias: la plataforma (administrador) y el Administrador de Feria (admin_feria)
+const ROLES_GESTION = ['administrador', 'admin_feria'];
+const NOMBRE_ROL = { administrador: 'Administrador de plataforma', admin_feria: 'Administrador de Feria', comerciante: 'Comerciante' };
+const esGestor = (sesion) => Boolean(sesion && ROLES_GESTION.includes(sesion.usuario.rol));
+
 function requerirSesion(rolesPermitidos) {
   const sesion = obtenerSesion();
   if (!sesion) {
@@ -74,7 +113,7 @@ function requerirSesion(rolesPermitidos) {
     return null;
   }
   if (rolesPermitidos && !rolesPermitidos.includes(sesion.usuario.rol)) {
-    window.location.href = sesion.usuario.rol === 'administrador' ? 'admin.html' : 'solicitar.html';
+    window.location.href = esGestor(sesion) ? 'admin.html' : 'solicitar.html';
     return null;
   }
   return sesion;
@@ -88,15 +127,18 @@ function pintarNavegacion() {
     contenedor.innerHTML = '<a href="index.html">Ferias</a><a href="login.html">Iniciar sesión</a><a href="registro.html">Registrarse</a>';
     return;
   }
-  const enlaces = sesion.usuario.rol === 'administrador'
-    ? '<a href="index.html">Ferias</a><a href="admin.html">Solicitudes</a><a href="admin-usuarios.html">Usuarios</a><a href="admin-ferias.html">Ferias y planos</a>'
-    : '<a href="index.html">Ferias</a><a href="solicitar.html">Solicitar puesto</a><a href="mis-solicitudes.html">Mis solicitudes</a><a href="avisos.html" id="enlace-avisos">Avisos</a>';
+  const ENLACES = {
+    administrador: '<a href="index.html">Ferias</a><a href="admin.html">Solicitudes</a><a href="admin-usuarios.html">Usuarios</a><a href="admin-ferias.html">Ferias y planos</a><a href="cobros.html">Cobros</a><a href="asistencia.html">Asistencia</a><a href="avisos.html" id="enlace-avisos">Avisos</a>',
+    admin_feria: '<a href="index.html">Ferias</a><a href="admin.html">Solicitudes</a><a href="admin-ferias.html">Mis ferias</a><a href="cobros.html">Pagos a la plataforma</a><a href="asistencia.html">Asistencia</a><a href="avisos.html" id="enlace-avisos">Avisos</a>',
+    comerciante: '<a href="index.html">Ferias</a><a href="solicitar.html">Solicitar puesto</a><a href="mis-solicitudes.html">Mis solicitudes</a><a href="avisos.html" id="enlace-avisos">Avisos</a>',
+  };
+  const enlaces = ENLACES[sesion.usuario.rol] || ENLACES.comerciante;
   contenedor.innerHTML = `${enlaces}<a href="cuenta.html">Mi cuenta</a><a href="#" id="cerrar-sesion">Salir (${esc(sesion.usuario.nombre)})</a>`;
   document.getElementById('cerrar-sesion').addEventListener('click', (e) => {
     e.preventDefault();
     cerrarSesion();
   });
-  // El comerciante ve cuántos avisos nuevos tiene
+  // Cada usuario ve cuántos avisos nuevos tiene
   const enlaceAvisos = document.getElementById('enlace-avisos');
   if (enlaceAvisos) {
     apiFetch('/notificaciones').then(({ no_leidas: n }) => {

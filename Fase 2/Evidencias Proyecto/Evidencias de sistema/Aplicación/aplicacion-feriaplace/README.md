@@ -1,9 +1,67 @@
 # FeriaPlace
 
+## Mejoras de noviembre 2026
+
+| Mejora | Dónde se usa |
+| --- | --- |
+| Pago en línea (modo prueba) | Comerciante: **Mis solicitudes → Pagar en línea**. Administrador de Feria: **Pagos a la plataforma**. La pasarela es simulada y no mueve dinero; `routes/pagos.js` no funciona con `NODE_ENV=production`. |
+| Notificaciones | Canales en **Mi cuenta**, **Enviar recordatorios de pago** en **Solicitudes** y **Bandeja de envíos** en **Avisos** (plataforma). El correo sale de verdad solo con SMTP configurado; WhatsApp siempre queda simulado. |
+| Lista de espera | **Solicitar puesto** en una feria llena. **Liberar puesto** en **Solicitudes** se lo ofrece por 48 horas al primero de la fila. |
+| Buscador público | Inicio: por producto o rubro y por día. |
+| Calificaciones | Inicio: tocar un puesto ocupado. Requiere cuenta de comerciante y que la feria haya empezado. |
+| Asistencia con QR | **Asistencia**: cámara, código o marcar a mano. La cámara solo funciona en `localhost` o `https`. |
+| Exportar reportes | **Solicitudes → Reporte**: **Descargar Excel** y **Descargar PDF** (ocupación, pagos y asistencia). |
+
+Migraciones nuevas: 009 a 013 (`npm run migrar`). Librerías nuevas: `exceljs` y `pdfkit` (`npm install`). Pruebas: `test/mejoras.test.js`. Hoy `npm test` ejecuta 43 pruebas: las **21 oficiales** del proyecto (`test/flujo.test.js` y `test/seguridad.test.js`) y 22 adicionales (`test/admin-feria.test.js` y `test/mejoras.test.js`) que Claude agregó sin que se pidieran y que no forman parte del conjunto oficial. Para correr solo las 21 oficiales: `node --test --test-concurrency=1 test/flujo.test.js test/seguridad.test.js`.
+
 Sistema de gestión de puestos de feria. Un comerciante envía una solicitud indicando
 sus preferencias (zona, tamaño, rubro); el administrador revisa las solicitudes
 pendientes y asigna el puesto real del mapa, agilizando el proceso en vez de que
 cada comerciante reserve un lugar específico.
+
+## Administrador de Feria y cobro por publicar puestos (noviembre 2026)
+
+Modelo de negocio pedido por el docente: **cada feria tiene un Administrador de Feria**, que gestiona y
+comercializa sus puestos (lotes), y **FeriaPlace le cobra a él por publicarlos**. El Administrador de Feria es el
+cliente directo de la plataforma. El caso de ejemplo son las ferias navideñas del informe: quien organiza la
+*Feria Navideña de Peñalolén* o la *Feria Navideña Plaza de Maipú* se registra como Administrador de Feria.
+
+Hay tres roles:
+
+| Rol | Quién es | Qué hace |
+| --- | --- | --- |
+| `administrador` | Dueño de la plataforma FeriaPlace | Aprueba cuentas, fija la tarifa por puesto, registra los pagos de los Administradores de Feria (se publica la feria), ve todo y puede entregar una feria a un Administrador de Feria. |
+| `admin_feria` | Administrador de Feria (organizador) | Se registra y espera aprobación. Crea sus ferias y su plano, pide la publicación y paga, recibe las solicitudes de **sus** ferias, asigna los puestos, registra lo que le pagan los comerciantes y ve el reporte de **sus** ferias. No puede tocar las ferias de otro (403). |
+| `comerciante` | Quien arrienda un puesto | Igual que antes: pide un puesto en una feria publicada y sigue su solicitud. |
+
+Cómo funciona el cobro:
+
+1. La feria de un Administrador de Feria **nace como borrador** (no la ven los comerciantes).
+2. En "Mis ferias", el botón **Pedir publicación** genera un cobro de `puestos × tarifa` (tarifa por defecto
+   $5.000, la cambia la plataforma en **Cobros**). La plataforma recibe un aviso.
+3. El Administrador de Feria transfiere (no hay pasarela de pago) y la plataforma marca el cobro como **pagado**.
+   Si con eso todos los puestos están pagados, **la feria se publica sola** y su dueño recibe un aviso.
+4. Si después agrega puestos a una feria publicada, la feria vuelve a borrador hasta que pague **solo los nuevos**.
+
+Las ferias que ya existían quedan **a cargo de la plataforma** (`admin_feria_id` vacío), siguen publicadas como
+estaban y no pagan publicación. Desde "Ferias y planos" se pueden entregar a un Administrador de Feria.
+
+**Requiere migrar una vez** (migración 008: agrega el rol `admin_feria`, la columna `organizacion` a `usuario`,
+`admin_feria_id` a `feria` y las tablas `cobro_publicacion` y `configuracion`; no borra nada):
+
+```powershell
+cd "C:\Users\basti\Desktop\proyecto\backend"
+npm run migrar
+```
+
+Datos de demostración opcionales (dos Administradores de Feria con sus ferias navideñas, Peñalolén publicada y
+pagada, Maipú en borrador con el cobro pendiente; contraseña `Demo2026!`):
+
+```powershell
+npm run demo
+```
+
+Cuentas de demostración: `carla@navidad-penalolen.cl` y `pedro@navidad-maipu.cl`.
 
 ## Credencial QR y avisos al comerciante (octubre 2026)
 
@@ -79,7 +137,7 @@ solicitud, asignación (y que un puesto no se asigne dos veces), pago, reporte d
 límite de intentos y cambio de contraseña. Además, desde el 03-11-2026, `test/seguridad.test.js` agrega 8 pruebas
 de concurrencia y rechazo: dos asignaciones simultáneas del mismo puesto (solo una gana), la espera que produce
 el bloqueo de fila, y los rechazos 401 (sin sesión), 403 (rol incorrecto o cuenta pendiente) y 409 (puesto ocupado).
-En total son 21 pruebas. Usan una base aparte, `feriaplace_test`, que borran y
+En total son 21 pruebas oficiales (el comando `npm test` hoy corre además 22 adicionales; ver arriba, "Mejoras de noviembre 2026"). Usan una base aparte, `feriaplace_test`, que borran y
 vuelven a crear en cada corrida; **la base real `feriaplace` no se toca**.
 
 Una sola vez, crea esa base (te pedirá la clave de `root` de MySQL):
@@ -253,6 +311,8 @@ Credenciales de prueba creadas:
   confirmada con el puesto A1)
 - **Comerciante de prueba**: `maria@ejemplo.cl` / `MariaLopez2026` (María López, de la
   Ficha de Avance 02; tiene una solicitud pendiente de frutas y verduras)
+- **Administrador de Feria Maipú**: `admin.maipu@feriaplace.cl` / `Maipu-Vp3w4ysq` (a cargo de la feria navideña de Plaza Maipú)
+- **Comerciante de la demo de Maipú**: `rosa.munoz@ejemplo.cl` / `Rosa-3g478srq` (Rosa Muñoz, cuenta aprobada sin puesto; en la demo de la semana 15 se usa a María López con el A2 de Plaza Maipú)
 
 Las credenciales reales de la base de datos están en `backend/.env` (no se sube a git).
 

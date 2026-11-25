@@ -17,7 +17,13 @@ function leerCodigo(codigo) {
   return crypto.timingSafeEqual(esperada, recibida) ? id : null;
 }
 
+// Fecha de hoy en Chile, "AAAA-MM-DD"
+function hoyEnChile() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
+}
+
 module.exports = {
   codigoCredencial: (solicitudId) => `${solicitudId}-${firmar(solicitudId)}`,
   leerCodigo,
+  hoyEnChile,
 };

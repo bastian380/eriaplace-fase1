@@ -8,6 +8,11 @@
 
   const fecha = (valor) => new Date(valor).toLocaleDateString('es-CL');
 
+  function tipo(u) {
+    return `<span class="badge ${u.rol === 'admin_feria' ? 'disponible' : 'ocupado'}">${NOMBRE_ROL[u.rol]}</span>`
+      + (u.organizacion ? `<br><small>${esc(u.organizacion)}</small>` : '');
+  }
+
   function persona(u) {
     return `${esc(u.nombre)}<br><small>${esc(u.email)}${u.telefono ? ` · ${esc(u.telefono)}` : ''}</small>`;
   }
@@ -18,10 +23,11 @@
     const revisados = usuarios.filter((u) => u.estado !== 'pendiente');
 
     tablaPendientes.innerHTML = pendientes.length === 0
-      ? '<tr><td colspan="4">No hay cuentas esperando aprobación.</td></tr>'
+      ? '<tr><td colspan="5">No hay cuentas esperando aprobación.</td></tr>'
       : pendientes.map((u) => `
         <tr>
           <td>${persona(u)}</td>
+          <td>${tipo(u)}</td>
           <td>${esc(u.motivo_registro || '-')}</td>
           <td>${fecha(u.creado_en)}</td>
           <td class="acciones-fila">
@@ -32,12 +38,13 @@
       `).join('');
 
     tablaRevisados.innerHTML = revisados.length === 0
-      ? '<tr><td colspan="5">Todavía no hay cuentas revisadas.</td></tr>'
+      ? '<tr><td colspan="6">Todavía no hay cuentas revisadas.</td></tr>'
       : revisados.map((u) => `
         <tr>
           <td>${persona(u)}</td>
+          <td>${tipo(u)}</td>
           <td><span class="badge ${u.estado === 'aprobado' ? 'confirmada' : 'rechazada'}">${u.estado}</span></td>
-          <td>${u.solicitudes}</td>
+          <td>${u.rol === 'admin_feria' ? `${u.ferias} ${u.ferias === 1 ? 'feria' : 'ferias'}` : u.solicitudes}</td>
           <td>${esc(u.comentario_admin || '-')}</td>
           <td class="acciones-fila">
             ${u.estado === 'aprobado'
@@ -53,7 +60,7 @@
         try {
           await apiFetch(`/usuarios/${boton.dataset.id}/aprobar`, { method: 'PUT', body: '{}' });
           await cargarTodo();
-          mensaje.innerHTML = '<div class="mensaje exito">Cuenta aprobada. Ya puede iniciar sesión y pedir puestos.</div>';
+          mensaje.innerHTML = '<div class="mensaje exito">Cuenta aprobada. Ya puede iniciar sesión.</div>';
         } catch (err) {
           mensaje.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
         }

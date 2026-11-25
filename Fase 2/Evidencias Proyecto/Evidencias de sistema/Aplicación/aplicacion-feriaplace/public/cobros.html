@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cobros de publicación - FeriaPlace</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#1f6f4f">
+<link rel="stylesheet" href="css/style.css">
+<header>
+  <a href="index.html">FeriaPlace</a>
+  <nav id="nav-sesion"></nav>
+</header>
+<main class="ancho">
+  <div class="tarjeta">
+    <h2 id="titulo-cobros">Cobros de publicación</h2>
+    <p class="texto-suave" id="explicacion-cobros"></p>
+    <div id="resumen-cobros" class="resumen-pagos"></div>
+    <form id="form-tarifa" class="acciones-fila oculto" style="margin-top:12px;">
+      <label for="tarifa" class="sin-margen">Tarifa por puesto publicado</label>
+      <input id="tarifa" type="number" min="0" step="1" style="width:auto">
+      <button type="submit" class="sin-margen">Guardar tarifa</button>
+    </form>
+    <div id="mensaje-tarifa"></div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Cobros</h2>
+    <table>
+      <thead>
+        <tr>
+          <th id="col-admin">Administrador de Feria</th>
+          <th>Feria</th>
+          <th>Puestos</th>
+          <th>Monto</th>
+          <th>Estado</th>
+          <th id="col-accion">Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-cobros"></tbody>
+    </table>
+    <div id="mensaje-cobros"></div>
+  </div>
+</main>
+<script src="js/api.js"></script>
+<script src="js/cobros.js"></script>

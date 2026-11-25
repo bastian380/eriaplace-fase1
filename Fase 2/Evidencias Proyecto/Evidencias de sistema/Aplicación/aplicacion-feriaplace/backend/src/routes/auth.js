@@ -14,6 +14,18 @@ router.post('/registro', async (req, res) => {
   const { nombre, email, password } = req.body;
   const telefono = String(req.body.telefono || '').trim();
   const motivo = String(req.body.motivo_registro || '').trim();
+  // Tipo de cuenta: comerciante (arrienda puestos) o admin_feria (Administrador de Feria, publica y gestiona su feria)
+  const rol = req.body.tipo_cuenta === undefined || req.body.tipo_cuenta === '' ? 'comerciante' : req.body.tipo_cuenta;
+  const organizacion = String(req.body.organizacion || '').trim();
+  if (!['comerciante', 'admin_feria'].includes(rol)) {
+    return res.status(400).json({ error: 'El tipo de cuenta debe ser comerciante o Administrador de Feria' });
+  }
+  if (rol === 'admin_feria' && organizacion.length < 3) {
+    return res.status(400).json({ error: 'Indica la organización o la feria que administras' });
+  }
+  if (organizacion.length > 150) {
+    return res.status(400).json({ error: 'La organización admite hasta 150 caracteres' });
+  }
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'Nombre, email y password son obligatorios' });
   }
@@ -21,7 +33,11 @@ router.post('/registro', async (req, res) => {
     return res.status(400).json({ error: `La contraseña debe tener al menos ${LARGO_MINIMO_CLAVE} caracteres` });
   }
   if (motivo.length < 10) {
-    return res.status(400).json({ error: 'Cuéntanos qué quieres vender y por qué te interesa un puesto (al menos 10 caracteres)' });
+    return res.status(400).json({
+      error: rol === 'admin_feria'
+        ? 'Cuéntanos qué feria administras y cuántos puestos quieres publicar (al menos 10 caracteres)'
+        : 'Cuéntanos qué quieres vender y por qué te interesa un puesto (al menos 10 caracteres)',
+    });
   }
   if (motivo.length > 500 || telefono.length > 30) {
     return res.status(400).json({ error: 'El motivo admite hasta 500 caracteres y el teléfono hasta 30' });
@@ -33,10 +49,11 @@ router.post('/registro', async (req, res) => {
     }
     const hash = await bcrypt.hash(password, 10);
     const [resultado] = await pool.query(
-      'INSERT INTO usuario (nombre, email, telefono, password_hash, rol, estado, motivo_registro) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [nombre, email, telefono || null, hash, 'comerciante', 'pendiente', motivo]
+      `INSERT INTO usuario (nombre, email, telefono, password_hash, rol, estado, motivo_registro, organizacion)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, email, telefono || null, hash, rol, 'pendiente', motivo, rol === 'admin_feria' ? organizacion : null]
     );
-    return res.status(201).json({ id: resultado.insertId, nombre, email, rol: 'comerciante', estado: 'pendiente' });
+    return res.status(201).json({ id: resultado.insertId, nombre, email, rol, estado: 'pendiente' });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Error al registrar usuario' });

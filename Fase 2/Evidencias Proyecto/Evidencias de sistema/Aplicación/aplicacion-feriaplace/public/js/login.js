@@ -1,6 +1,16 @@
 // Mantiene el destino de vuelta si la persona pasa por "Regístrate aquí"
 document.getElementById('enlace-registro').href = `registro.html${window.location.search}`;
 
+let sesionExpirada = false;
+try {
+  sesionExpirada = sessionStorage.getItem('feriaplace_sesion_expirada') === '1';
+  sessionStorage.removeItem('feriaplace_sesion_expirada');
+} catch (err) { /* sin almacenamiento */ }
+if (sesionExpirada || new URLSearchParams(window.location.search).get('expirada')) {
+  document.getElementById('mensaje').innerHTML =
+    '<div class="mensaje error">Tu sesión expiró (dura 8 horas). Vuelve a iniciar sesión.</div>';
+}
+
 document.getElementById('form-login').addEventListener('submit', async (e) => {
   e.preventDefault();
   const mensaje = document.getElementById('mensaje');
@@ -19,7 +29,7 @@ document.getElementById('form-login').addEventListener('submit', async (e) => {
       window.location.href = volver;
       return;
     }
-    window.location.href = datos.usuario.rol === 'administrador' ? 'admin.html' : 'index.html';
+    window.location.href = datos.usuario.rol === 'administrador' || datos.usuario.rol === 'admin_feria' ? 'admin.html' : 'index.html';
   } catch (err) {
     mensaje.innerHTML = `<div class="mensaje error">${esc(err.message)}</div>`;
   }

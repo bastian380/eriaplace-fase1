@@ -54,6 +54,13 @@ function dibujarPlano(contenedor, feria, puestos, opciones = {}) {
 
   marco.appendChild(plano);
   contenedor.appendChild(marco);
+  // En pantallas angostas el plano no cabe entero: se avisa que se puede deslizar
+  if (marco.scrollWidth > marco.clientWidth + 4) {
+    const ayuda = document.createElement('p');
+    ayuda.className = 'ayuda-scroll';
+    ayuda.textContent = 'Desliza para ver todo el plano →';
+    contenedor.appendChild(ayuda);
+  }
   return plano;
 }
 

@@ -59,12 +59,12 @@ function crearCalendario(contenedor, opciones = {}) {
         <button type="button" class="secundario sin-margen boton-chico cal-siguiente" aria-label="Mes siguiente">&#8250;</button>
         <button type="button" class="secundario sin-margen boton-chico cal-hoy">Hoy</button>
       </div>
-      <div class="cal-marco">
+      ${delMes.length === 0 && !opciones.alHacerClicDia ? '' : `<div class="cal-marco">
         <div class="cal-grilla">
           ${DIAS_SEMANA.map((d) => `<div class="cal-encabezado">${d}</div>`).join('')}
           ${celdas.join('')}
         </div>
-      </div>
+      </div>`}
       ${delMes.length === 0
     ? `<p class="estado-vacio cal-vacio">${opciones.textoVacio || 'No hay ferias de temporada en este mes.'}</p>`
     : `<ul class="cal-lista">${delMes.map((f) => `
